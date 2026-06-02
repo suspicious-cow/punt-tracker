@@ -399,15 +399,72 @@ main {
   padding: 6px 10px;
   background: #fff;
   border: 1.5px solid var(--line);
-  border-radius: 6px;
+  border-radius: 6px 0 0 6px;
+  border-right: none;
   color: var(--ink);
   text-align: center;
   min-height: 36px;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+#los-yard::-webkit-outer-spin-button,
+#los-yard::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 #los-yard:focus {
   outline: none;
   border-color: var(--gold);
+}
+
+.los-stepper {
+  display: inline-flex;
+  align-items: stretch;
+}
+
+.los-stepper-buttons {
+  display: flex;
+  flex-direction: column;
+}
+
+.los-step {
+  width: 24px;
+  height: 18px;
+  padding: 0;
+  border: 1.5px solid var(--line);
+  background: var(--ink);
+  color: var(--gold-bright);
+  font-size: 0.6rem;
+  line-height: 1;
+  cursor: pointer;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.los-step-up {
+  border-radius: 0 6px 0 0;
+  border-bottom-width: 0.75px;
+}
+
+.los-step-down {
+  border-radius: 0 0 6px 0;
+  border-top-width: 0.75px;
+}
+
+.los-step:hover {
+  background: var(--gold);
+  color: var(--ink);
+}
+
+.los-step:active {
+  background: var(--gold-bright);
+  color: var(--ink);
 }
 
 .field-prompt {

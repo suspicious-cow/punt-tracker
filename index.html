@@ -121,7 +121,13 @@
                   <input type="radio" id="los-side-opp" name="los-side" value="opp">
                   <label for="los-side-opp">Opp</label>
                 </div>
-                <input type="number" id="los-yard" min="1" max="50" value="35" inputmode="numeric" aria-label="LOS yard line">
+                <div class="los-stepper">
+                  <input type="number" id="los-yard" min="1" max="50" value="35" inputmode="numeric" aria-label="LOS yard line">
+                  <div class="los-stepper-buttons">
+                    <button type="button" id="los-step-up" class="los-step los-step-up" aria-label="Increase yard line">&#9650;</button>
+                    <button type="button" id="los-step-down" class="los-step los-step-down" aria-label="Decrease yard line">&#9660;</button>
+                  </div>
+                </div>
                 <span class="los-unit">yd line</span>
               </div>
 

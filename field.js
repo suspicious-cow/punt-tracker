@@ -64,6 +64,21 @@ function setupField(handlers) {
   landingTouch.addEventListener('click', (e) => e.stopPropagation());
   losInput.addEventListener('input', handleLosChange);
   losSideRadios.forEach((r) => r.addEventListener('change', handleLosChange));
+
+  const losStepUp = document.getElementById('los-step-up');
+  const losStepDown = document.getElementById('los-step-down');
+  if (losStepUp) {
+    losStepUp.addEventListener('click', () => {
+      losInput.stepUp();
+      losInput.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
+  if (losStepDown) {
+    losStepDown.addEventListener('click', () => {
+      losInput.stepDown();
+      losInput.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
   resetBtn.addEventListener('click', resetLanding);
 
   fieldState.landing = makeDefaultLanding();
