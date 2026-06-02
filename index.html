@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Punt Tracker</title>
+  <meta name="description" content="Log every punt. Watch the numbers move. Free, open punt training tracker.">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1a1a1a">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Punt Tracker">
+  <link rel="stylesheet" href="tracker.css">
+</head>
+<body>
+  <header class="app-header">
+    <p class="eyebrow">PUNT TRACKER</p>
+    <h1>Log a Kick</h1>
+    <p class="subtitle">Every kick. Every session. The numbers don't lie.</p>
+  </header>
+
+  <main>
+    <aside class="stats-sidebar">
+      <div class="stat-card">
+        <h3>Best Punt</h3>
+        <div class="stat-primary" id="best-kick-distance">&mdash;</div>
+        <div class="stat-secondary" id="best-kick-hangtime">no kicks yet</div>
+      </div>
+
+      <div class="stat-card">
+        <h3>All-Time Avg</h3>
+        <div class="stat-primary" id="all-time-avg">&mdash;</div>
+        <div class="stat-secondary" id="all-time-meta">no kicks yet</div>
+      </div>
+
+      <div class="stat-card">
+        <h3>Inside 20 vs TB</h3>
+        <div class="ratio-row">
+          <div class="ratio-half">
+            <div class="ratio-number" id="i20-count">0</div>
+            <div class="ratio-label">Inside 20</div>
+          </div>
+          <div class="ratio-divider"></div>
+          <div class="ratio-half">
+            <div class="ratio-number ratio-bad" id="tb-count">0</div>
+            <div class="ratio-label">Touchbacks</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="primary-column">
+      <section class="card session-control-card" id="session-control-card">
+        <div id="session-inactive" class="session-state">
+          <div class="session-prompt">Ready to punt? Hit Start to log this practice.</div>
+          <button type="button" id="start-session-btn" class="primary-btn">Start Session</button>
+          <div id="last-session-preview" class="last-session-preview" hidden></div>
+        </div>
+        <div id="session-active" class="session-state" hidden>
+          <div class="active-session-header">
+            <span class="active-pill">LIVE</span>
+            <span id="active-session-time">Started &mdash;</span>
+          </div>
+          <div class="active-session-stats">
+            <div class="session-stat">
+              <div class="session-stat-num" id="live-count">0</div>
+              <div class="session-stat-label">Kicks</div>
+            </div>
+            <div class="session-stat">
+              <div class="session-stat-num" id="live-avg-dist">&mdash;</div>
+              <div class="session-stat-label">Avg Dist</div>
+            </div>
+            <div class="session-stat">
+              <div class="session-stat-num" id="live-avg-hang">&mdash;</div>
+              <div class="session-stat-label">Avg Hang</div>
+            </div>
+            <div class="session-stat">
+              <div class="session-stat-num" id="live-best">&mdash;</div>
+              <div class="session-stat-label">Best</div>
+            </div>
+          </div>
+          <button type="button" id="finish-session-btn" class="secondary-btn">Finish Session</button>
+        </div>
+      </section>
+
+      <section class="card" id="form-card">
+        <form id="kick-form" autocomplete="off">
+          <div class="field">
+            <label for="hangtime">Hangtime <span class="unit">(seconds)</span></label>
+            <div class="stopwatch">
+              <button type="button" id="stopwatch-btn" class="stopwatch-btn" data-state="idle">Tap When Ball Is Kicked</button>
+              <div class="stopwatch-display-row">
+                <span id="stopwatch-display" class="stopwatch-display">0.00</span>
+                <span class="stopwatch-unit">sec</span>
+                <button type="button" id="stopwatch-reset" class="stopwatch-reset" hidden>Reset</button>
+              </div>
+              <p id="stopwatch-help" class="stopwatch-help">Use the stopwatch or type the number below.</p>
+            </div>
+            <input
+              type="number"
+              id="hangtime"
+              name="hangtime"
+              inputmode="decimal"
+              step="0.1"
+              min="0"
+              max="10"
+              required>
+          </div>
+
+          <div class="field">
+            <label>Where it landed</label>
+            <div class="field-picker">
+              <p id="field-error" class="field-error" hidden>Drag the football to where your punt landed before saving.</p>
+              <div class="los-input-row">
+                <span class="los-label">From</span>
+                <div class="los-side-toggle" role="radiogroup" aria-label="LOS side">
+                  <input type="radio" id="los-side-own" name="los-side" value="own" checked>
+                  <label for="los-side-own">Own</label>
+                  <input type="radio" id="los-side-opp" name="los-side" value="opp">
+                  <label for="los-side-opp">Opp</label>
+                </div>
+                <input type="number" id="los-yard" min="1" max="50" value="35" inputmode="numeric" aria-label="LOS yard line">
+                <span class="los-unit">yd line</span>
+              </div>
+
+              <p id="field-prompt" class="field-prompt">LOS at Own 35 &middot; tap where it landed</p>
+              <svg id="field-svg" viewBox="0 0 120 53" class="field-svg" preserveAspectRatio="xMidYMid meet">
+                <rect x="0" y="0" width="10" height="53" class="end-zone end-zone-own" />
+                <rect x="110" y="0" width="10" height="53" class="end-zone end-zone-opp" />
+                <rect x="10" y="0" width="100" height="53" class="field-of-play" />
+
+                <line x1="15" y1="0" x2="15" y2="53" class="yard-line" />
+                <line x1="20" y1="0" x2="20" y2="53" class="yard-line" />
+                <line x1="25" y1="0" x2="25" y2="53" class="yard-line" />
+                <line x1="30" y1="0" x2="30" y2="53" class="yard-line" />
+                <line x1="35" y1="0" x2="35" y2="53" class="yard-line" />
+                <line x1="40" y1="0" x2="40" y2="53" class="yard-line" />
+                <line x1="45" y1="0" x2="45" y2="53" class="yard-line" />
+                <line x1="50" y1="0" x2="50" y2="53" class="yard-line" />
+                <line x1="55" y1="0" x2="55" y2="53" class="yard-line" />
+                <line x1="60" y1="0" x2="60" y2="53" class="yard-line yard-line-fifty" />
+                <line x1="65" y1="0" x2="65" y2="53" class="yard-line" />
+                <line x1="70" y1="0" x2="70" y2="53" class="yard-line" />
+                <line x1="75" y1="0" x2="75" y2="53" class="yard-line" />
+                <line x1="80" y1="0" x2="80" y2="53" class="yard-line" />
+                <line x1="85" y1="0" x2="85" y2="53" class="yard-line" />
+                <line x1="90" y1="0" x2="90" y2="53" class="yard-line" />
+                <line x1="95" y1="0" x2="95" y2="53" class="yard-line" />
+                <line x1="100" y1="0" x2="100" y2="53" class="yard-line" />
+                <line x1="105" y1="0" x2="105" y2="53" class="yard-line" />
+
+                <line x1="10" y1="0" x2="10" y2="53" class="goal-line" />
+                <line x1="110" y1="0" x2="110" y2="53" class="goal-line" />
+
+                <g id="hash-marks"></g>
+
+                <text x="20" y="11" class="yard-number">10</text>
+                <text x="30" y="11" class="yard-number">20</text>
+                <text x="40" y="11" class="yard-number">30</text>
+                <text x="50" y="11" class="yard-number">40</text>
+                <text x="60" y="11" class="yard-number yard-number-fifty">50</text>
+                <text x="70" y="11" class="yard-number">40</text>
+                <text x="80" y="11" class="yard-number">30</text>
+                <text x="90" y="11" class="yard-number">20</text>
+                <text x="100" y="11" class="yard-number">10</text>
+
+                <text x="20" y="47" class="yard-number">10</text>
+                <text x="30" y="47" class="yard-number">20</text>
+                <text x="40" y="47" class="yard-number">30</text>
+                <text x="50" y="47" class="yard-number">40</text>
+                <text x="60" y="47" class="yard-number yard-number-fifty">50</text>
+                <text x="70" y="47" class="yard-number">40</text>
+                <text x="80" y="47" class="yard-number">30</text>
+                <text x="90" y="47" class="yard-number">20</text>
+                <text x="100" y="47" class="yard-number">10</text>
+
+                <line id="punt-arrow" class="punt-arrow" x1="0" y1="0" x2="0" y2="0" hidden></line>
+                <line id="los-marker" class="los-marker" x1="0" y1="0" x2="0" y2="53"></line>
+                <circle id="punter-marker" class="punter-marker" cx="0" cy="26.5" r="1.5"></circle>
+                <g id="landing-group" hidden>
+                  <g id="landing-marker" class="landing-marker">
+                    <ellipse class="football-body" cx="0" cy="0" rx="2.6" ry="1.4"></ellipse>
+                    <line class="football-stripe" x1="-1.7" y1="0" x2="1.7" y2="0"></line>
+                    <line class="football-lace" x1="-0.7" y1="-0.35" x2="-0.7" y2="0.35"></line>
+                    <line class="football-lace" x1="-0.25" y1="-0.35" x2="-0.25" y2="0.35"></line>
+                    <line class="football-lace" x1="0.2" y1="-0.35" x2="0.2" y2="0.35"></line>
+                    <line class="football-lace" x1="0.65" y1="-0.35" x2="0.65" y2="0.35"></line>
+                  </g>
+                  <circle id="landing-touch" class="landing-touch" cx="0" cy="0" r="6"></circle>
+                </g>
+              </svg>
+              <div class="field-controls">
+                <p id="field-summary" class="field-summary"></p>
+                <button type="button" id="field-reset" class="field-reset" hidden>Reset Landing</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="notes">Notes <span class="unit">(optional)</span></label>
+            <textarea
+              id="notes"
+              name="notes"
+              rows="2"
+              placeholder="Wind, drop, direction, anything worth remembering"></textarea>
+          </div>
+
+          <div id="edit-mode-banner" class="edit-mode-banner" hidden>
+            <span>Editing existing kick</span>
+            <button type="button" id="cancel-edit-btn" class="cancel-btn">Cancel</button>
+          </div>
+
+          <button type="submit" class="save-btn" id="save-btn">Save Kick</button>
+        </form>
+      </section>
+
+      <section class="card" id="active-kicks-card">
+        <h2>This Session</h2>
+        <ul id="kick-list" class="kick-list">
+        </ul>
+        <p id="empty-state" class="empty-state">No kicks yet &mdash; drag the football to log your first.</p>
+      </section>
+
+      <section class="card" id="chart-card">
+        <h2>Distance Trend</h2>
+        <div class="chart-container">
+          <canvas id="distance-chart"></canvas>
+          <p id="distance-chart-empty" class="empty-state chart-empty">Finish a session to start tracking your trend.</p>
+        </div>
+      </section>
+
+      <section class="card" id="hangtime-chart-card">
+        <h2>Hangtime Trend</h2>
+        <div class="chart-container">
+          <canvas id="hangtime-chart"></canvas>
+          <p id="hangtime-chart-empty" class="empty-state chart-empty">Finish a session to start tracking your trend.</p>
+        </div>
+      </section>
+
+      <section class="card" id="past-sessions-card">
+        <h2>Past Sessions</h2>
+        <ul id="session-list" class="session-list">
+        </ul>
+        <p id="sessions-empty" class="empty-state">No past sessions yet. Finish one to see it here.</p>
+      </section>
+
+      <div class="data-controls">
+        <button type="button" id="export-btn" class="data-btn">Export Backup</button>
+        <label for="import-input" class="data-btn data-btn-label">
+          Import Backup
+          <input type="file" id="import-input" accept="application/json,.json">
+        </label>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p class="muted">Open source &middot; <a href="https://github.com/suspicious-cow/punt-tracker">View on GitHub</a></p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="storage.js"></script>
+  <script src="stats.js"></script>
+  <script src="field.js"></script>
+  <script src="stopwatch.js"></script>
+  <script src="charts.js"></script>
+  <script src="tracker.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch((err) => {
+          console.error('Service worker registration failed:', err);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
