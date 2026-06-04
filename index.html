@@ -17,11 +17,29 @@
 <body>
   <div id="account-chip" class="account-chip"></div>
 
-  <header class="app-header player-only">
+  <nav class="player-tab-bar player-only" aria-label="View">
+    <button type="button" class="player-tab player-tab-active" data-team-action="tab-kicks">Log Kicks</button>
+    <button type="button" class="player-tab" data-team-action="tab-team">My Team</button>
+  </nav>
+
+  <header class="app-header player-only player-tab-kicks-only">
     <p class="eyebrow">PUNT TRACKER</p>
     <h1>Log a Kick</h1>
     <p class="subtitle">Every kick. Every session. The numbers don't lie.</p>
   </header>
+
+  <header class="app-header player-only player-tab-team-only" hidden>
+    <p class="eyebrow">PUNT TRACKER &middot; TEAM</p>
+    <h1>My Team</h1>
+    <p class="subtitle">Live stats from your teammates &mdash; and you.</p>
+  </header>
+
+  <section id="team-view-panel" class="coach-dashboard player-only player-tab-team-only" hidden>
+    <div id="team-view-list" class="coach-teams-list" aria-live="polite"></div>
+    <p id="team-view-empty" class="coach-empty-dashboard" hidden>
+      You haven&rsquo;t joined a team yet. Click <strong>Teams</strong> in the account bar to join one with a code.
+    </p>
+  </section>
 
   <header class="app-header coach-only">
     <p class="eyebrow">PUNT TRACKER &middot; COACH</p>
@@ -36,7 +54,7 @@
     </p>
   </section>
 
-  <main class="player-only">
+  <main class="player-only player-tab-kicks-only">
     <aside class="stats-sidebar">
       <div class="stat-card">
         <h3>Best Punt</h3>
@@ -277,8 +295,12 @@
     </div>
   </main>
 
-  <footer class="player-only">
+  <footer class="player-only player-tab-kicks-only">
     <p class="muted">Open source &middot; <a href="https://github.com/suspicious-cow/punt-tracker">View on GitHub</a></p>
+  </footer>
+
+  <footer class="player-only player-tab-team-only" hidden>
+    <p class="muted">Live updates via Supabase Realtime &middot; <a href="https://github.com/suspicious-cow/punt-tracker">View on GitHub</a></p>
   </footer>
 
   <footer class="coach-only">
@@ -484,6 +506,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-client.js"></script>
   <script src="coach.js"></script>
+  <script src="team-view.js"></script>
   <script src="auth.js"></script>
   <script src="storage.js"></script>
   <script src="stats.js"></script>

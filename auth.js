@@ -64,8 +64,13 @@ async function setAuthState(user) {
 function applyRoleUI(role) {
   if (role === 'coach') {
     if (window.coachDashboard) window.coachDashboard.activate();
+    if (window.teamView) window.teamView.deactivate();
+  } else if (role === 'player') {
+    if (window.coachDashboard) window.coachDashboard.deactivate();
+    if (window.teamView) window.teamView.activate();
   } else {
     if (window.coachDashboard) window.coachDashboard.deactivate();
+    if (window.teamView) window.teamView.deactivate();
   }
 }
 

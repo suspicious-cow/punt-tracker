@@ -1498,6 +1498,64 @@ body.modal-open { overflow: hidden; }
 body.role-coach .player-only { display: none; }
 body.role-coach .coach-only { display: block; }
 
+/* ---------- Player tab bar ---------- */
+
+.player-tab-bar { display: none; }
+
+body.role-player .player-tab-bar {
+  display: flex;
+  gap: 6px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 4px;
+  margin: 12px auto 8px;
+  width: fit-content;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.player-tab {
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  min-height: 36px;
+}
+
+.player-tab:hover { color: var(--ink); }
+
+.player-tab.player-tab-active {
+  background: var(--ink);
+  color: var(--gold-bright);
+}
+
+/* ---------- "YOU" badge + me-card highlight on team view ---------- */
+
+.player-me-badge {
+  display: inline-block;
+  background: var(--gold);
+  color: var(--ink);
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.player-card-me {
+  border-color: var(--gold);
+  background: rgba(200, 161, 60, 0.08);
+}
+
 /* ---------- Coach dashboard ---------- */
 
 .coach-dashboard {
