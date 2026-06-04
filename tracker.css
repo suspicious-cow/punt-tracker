@@ -1455,6 +1455,12 @@ body.modal-open { overflow: hidden; }
   margin: 0;
 }
 
+.auth-row-right {
+  text-align: right;
+  margin-top: -6px;
+  font-size: 0.8rem;
+}
+
 .auth-link {
   background: none;
   border: none;

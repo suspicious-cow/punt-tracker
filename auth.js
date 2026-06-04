@@ -34,7 +34,11 @@ async function initAuth() {
   const { data: { session } } = await db().auth.getSession();
   await setAuthState(session ? session.user : null);
   window.authState.loaded = true;
-  db().auth.onAuthStateChange(async (_event, newSession) => {
+  db().auth.onAuthStateChange(async (event, newSession) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      openAuthModal('newpass-modal');
+      return;
+    }
     await setAuthState(newSession ? newSession.user : null);
   });
 }
@@ -104,6 +108,17 @@ async function signIn({ email, password }) {
 
 async function signOut() {
   await db().auth.signOut();
+}
+
+async function requestPasswordReset({ email }) {
+  const redirectTo = window.location.origin + window.location.pathname;
+  const { error } = await db().auth.resetPasswordForEmail(email, { redirectTo });
+  if (error) throw error;
+}
+
+async function setNewPassword({ password }) {
+  const { error } = await db().auth.updateUser({ password });
+  if (error) throw error;
 }
 
 // ---------- MIGRATION ----------
@@ -297,6 +312,7 @@ function wireAuthEvents() {
     if (action === 'open-signup') openAuthModal('signup-modal');
     if (action === 'switch-to-signin') openAuthModal('signin-modal');
     if (action === 'switch-to-signup') openAuthModal('signup-modal');
+    if (action === 'open-reset') openAuthModal('reset-modal');
     if (action === 'close') closeAuthModal();
     if (action === 'signout') {
       trigger.disabled = true;
@@ -332,6 +348,42 @@ function wireAuthEvents() {
       showToast('Signed in', 'good');
     } catch (err) {
       setFormError('signin-form', err.message || 'Sign in failed');
+    } finally {
+      submit.disabled = false;
+    }
+  });
+
+  document.getElementById('reset-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    setFormError('reset-form', '');
+    const submit = e.target.querySelector('button[type="submit"]');
+    submit.disabled = true;
+    try {
+      const email = e.target.elements['reset-email'].value.trim();
+      await requestPasswordReset({ email });
+      closeAuthModal();
+      showToast(`Reset link sent to ${email}. Check your inbox.`, 'good');
+    } catch (err) {
+      setFormError('reset-form', err.message || 'Reset failed');
+    } finally {
+      submit.disabled = false;
+    }
+  });
+
+  document.getElementById('newpass-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    setFormError('newpass-form', '');
+    const submit = e.target.querySelector('button[type="submit"]');
+    submit.disabled = true;
+    try {
+      const password = e.target.elements['newpass-password'].value;
+      if (password.length < 6) throw new Error('Password must be at least 6 characters');
+      await setNewPassword({ password });
+      history.replaceState(null, '', window.location.pathname);
+      closeAuthModal();
+      showToast('Password updated. You’re signed in.', 'good');
+    } catch (err) {
+      setFormError('newpass-form', err.message || 'Failed to update password');
     } finally {
       submit.disabled = false;
     }

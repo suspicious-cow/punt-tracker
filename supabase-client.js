@@ -12,7 +12,8 @@ if (!window.supabase || typeof window.supabase.createClient !== 'function') {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: false,
+      detectSessionInUrl: true,
+      flowType: 'implicit',
     },
   });
   console.log('[punt-tracker] supabase client ready');

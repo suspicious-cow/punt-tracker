@@ -281,12 +281,45 @@
           <span>Password</span>
           <input type="password" name="signin-password" required autocomplete="current-password">
         </label>
+        <div class="auth-row-right">
+          <button type="button" class="auth-link" data-auth-action="open-reset">Forgot password?</button>
+        </div>
         <p class="auth-form-error" hidden></p>
         <button type="submit" class="auth-submit">Sign in</button>
         <p class="auth-switch">
           New here?
           <button type="button" class="auth-link" data-auth-action="switch-to-signup">Create an account</button>
         </p>
+      </form>
+    </div>
+
+    <div class="auth-modal" id="reset-modal" hidden>
+      <button type="button" class="auth-close" data-auth-action="close" aria-label="Close">&times;</button>
+      <h2>Reset password</h2>
+      <form id="reset-form" novalidate>
+        <label>
+          <span>Email</span>
+          <input type="email" name="reset-email" required autocomplete="email">
+        </label>
+        <p class="auth-modal-hint">We&rsquo;ll email you a link to set a new password.</p>
+        <p class="auth-form-error" hidden></p>
+        <button type="submit" class="auth-submit">Send reset link</button>
+        <p class="auth-switch">
+          <button type="button" class="auth-link" data-auth-action="switch-to-signin">Back to sign in</button>
+        </p>
+      </form>
+    </div>
+
+    <div class="auth-modal" id="newpass-modal" hidden>
+      <h2>Set a new password</h2>
+      <p class="auth-modal-hint">Pick something you&rsquo;ll remember this time.</p>
+      <form id="newpass-form" novalidate>
+        <label>
+          <span>New password</span>
+          <input type="password" name="newpass-password" required minlength="6" autocomplete="new-password">
+        </label>
+        <p class="auth-form-error" hidden></p>
+        <button type="submit" class="auth-submit">Set password</button>
       </form>
     </div>
 
