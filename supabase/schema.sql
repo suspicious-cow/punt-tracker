@@ -292,3 +292,67 @@ end;
 $$;
 
 grant execute on function public.join_team_by_code(text) to authenticated;
+
+-- ============================================================
+-- 5. TAMPER-PROOF TIMESTAMPS (phase-7)
+-- ============================================================
+-- Triggers that lock kick/session timestamps once a row exists, so a
+-- buggy client (or a malicious one) cannot rewrite history.
+-- See supabase/migrations/phase-7.sql for the full reasoning.
+
+create or replace function public.tp_force_created_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.created_at := now();
+  return new;
+end;
+$$;
+
+create or replace function public.tp_lock_kick_timestamps()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.created_at := old.created_at;
+  new.kicked_at  := old.kicked_at;
+  new.date       := old.date;
+  return new;
+end;
+$$;
+
+create or replace function public.tp_lock_session_timestamps()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.created_at := old.created_at;
+  new.started_at := old.started_at;
+  new.date       := old.date;
+  if old.finished_at is not null then
+    new.finished_at := old.finished_at;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists kicks_force_created_at on public.kicks;
+create trigger kicks_force_created_at
+  before insert on public.kicks
+  for each row execute function public.tp_force_created_at();
+
+drop trigger if exists kicks_lock_timestamps on public.kicks;
+create trigger kicks_lock_timestamps
+  before update on public.kicks
+  for each row execute function public.tp_lock_kick_timestamps();
+
+drop trigger if exists sessions_force_created_at on public.sessions;
+create trigger sessions_force_created_at
+  before insert on public.sessions
+  for each row execute function public.tp_force_created_at();
+
+drop trigger if exists sessions_lock_timestamps on public.sessions;
+create trigger sessions_lock_timestamps
+  before update on public.sessions
+  for each row execute function public.tp_lock_session_timestamps();
