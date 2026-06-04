@@ -1,4 +1,4 @@
-const CACHE_NAME = 'punt-tracker-v11';
+const CACHE_NAME = 'punt-tracker-v12';
 const APP_SHELL = [
   './',
   './index.html',
@@ -11,6 +11,7 @@ const APP_SHELL = [
   './charts.js',
   './supabase-client.js',
   './auth.js',
+  './sync-queue.js',
   './coach.js',
   './team-view.js',
   './icon.svg',

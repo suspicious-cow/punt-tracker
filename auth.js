@@ -56,6 +56,7 @@ async function setAuthState(user) {
       return;
     }
     await maybeMigrate(user.id);
+    if (window.syncQueue) window.syncQueue.flush();
   }
   renderAccountChip();
   applyRoleUI(window.authState.profile ? window.authState.profile.role : null);
@@ -243,6 +244,7 @@ function kickToCloud(kick, userId) {
     position: kick.position || null,
     notes: kick.notes || '',
     date: kick.date || null,
+    hidden_from_team: kick.hiddenFromTeam === true,
     kicked_at: kick.timestamp || new Date().toISOString(),
   };
 }
@@ -286,30 +288,49 @@ async function performMigration() {
 
 // ---------- OUTGOING SYNC (called from storage.js after each local write) ----------
 
+function queueOnFail(op, err) {
+  console.error('[sync]', op.type, err);
+  if (window.syncQueue) window.syncQueue.enqueue(op);
+}
+
 window.cloudSync = {
   upsertKick(kick) {
     const user = window.authState.user;
     if (!user) return;
-    db().from('kicks').upsert(kickToCloud(kick, user.id), { onConflict: 'id' })
-      .then(({ error }) => { if (error) console.error('[sync] kick upsert', error); });
+    const payload = kickToCloud(kick, user.id);
+    db().from('kicks').upsert(payload, { onConflict: 'id' })
+      .then(({ error }) => {
+        if (error) queueOnFail({ type: 'upsertKick', payload, id: kick.id }, error);
+      })
+      .catch((err) => queueOnFail({ type: 'upsertKick', payload, id: kick.id }, err));
   },
   deleteKick(kickId) {
     const user = window.authState.user;
     if (!user) return;
     db().from('kicks').delete().eq('id', kickId).eq('user_id', user.id)
-      .then(({ error }) => { if (error) console.error('[sync] kick delete', error); });
+      .then(({ error }) => {
+        if (error) queueOnFail({ type: 'deleteKick', id: kickId }, error);
+      })
+      .catch((err) => queueOnFail({ type: 'deleteKick', id: kickId }, err));
   },
   upsertSession(session) {
     const user = window.authState.user;
     if (!user) return;
-    db().from('sessions').upsert(sessionToCloud(session, user.id), { onConflict: 'id' })
-      .then(({ error }) => { if (error) console.error('[sync] session upsert', error); });
+    const payload = sessionToCloud(session, user.id);
+    db().from('sessions').upsert(payload, { onConflict: 'id' })
+      .then(({ error }) => {
+        if (error) queueOnFail({ type: 'upsertSession', payload, id: session.id }, error);
+      })
+      .catch((err) => queueOnFail({ type: 'upsertSession', payload, id: session.id }, err));
   },
   deleteSession(sessionId) {
     const user = window.authState.user;
     if (!user) return;
     db().from('sessions').delete().eq('id', sessionId).eq('user_id', user.id)
-      .then(({ error }) => { if (error) console.error('[sync] session delete', error); });
+      .then(({ error }) => {
+        if (error) queueOnFail({ type: 'deleteSession', id: sessionId }, error);
+      })
+      .catch((err) => queueOnFail({ type: 'deleteSession', id: sessionId }, err));
   },
 };
 
@@ -331,8 +352,13 @@ function renderAccountChip() {
   const teamsBtn = profile
     ? `<button type="button" class="account-btn" data-auth-action="open-teams">Teams</button>`
     : '';
+  const pending = window.syncQueue ? window.syncQueue.count() : 0;
+  const pendingBadge = pending > 0
+    ? `<span class="sync-badge" title="Pending cloud syncs">${pending} pending</span>`
+    : '';
   chip.innerHTML = `
     <span class="account-name">${escapeHtml(name)}${roleLabel}</span>
+    ${pendingBadge}
     ${teamsBtn}
     <button type="button" class="account-btn" data-auth-action="signout">Sign out</button>
   `;
@@ -666,5 +692,6 @@ function wireAuthEvents() {
 
 document.addEventListener('DOMContentLoaded', () => {
   wireAuthEvents();
+  if (window.syncQueue) window.syncQueue.onChange(renderAccountChip);
   initAuth();
 });

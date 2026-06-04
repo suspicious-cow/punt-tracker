@@ -254,14 +254,28 @@
     refetchTimer = setTimeout(refresh, 300);
   }
 
+  function setLiveState(state) {
+    const el = document.getElementById('team-live-indicator');
+    if (!el) return;
+    el.dataset.state = state;
+    if (state === 'live') el.textContent = '● Live';
+    else if (state === 'connecting') el.textContent = '● Connecting…';
+    else if (state === 'stale') el.textContent = '● Reconnecting…';
+    else el.textContent = '';
+  }
+
   function subscribe() {
     if (channel) return;
+    setLiveState('connecting');
     channel = db()
       .channel('team-view-live')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'kicks' }, scheduleRefetch)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, scheduleRefetch)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'team_members' }, scheduleRefetch)
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') setLiveState('live');
+        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') setLiveState('stale');
+      });
   }
 
   function unsubscribe() {
@@ -270,6 +284,7 @@
     channel = null;
     clearTimeout(refetchTimer);
     refetchTimer = null;
+    setLiveState('');
   }
 
   function setTab(tab) {

@@ -99,10 +99,11 @@ function pbBadgeHtml(kickId) {
 function kickRowHtml(kick) {
   const fieldSummary = kickFieldSummary(kick);
   const pbHtml = pbBadgeHtml(kick.id);
+  const hiddenBadge = kick.hiddenFromTeam ? '<span class="kick-hidden-badge" title="Hidden from team">HIDDEN</span>' : '';
   return `
     <div class="kick-distance">${kick.distance}<span class="unit">yd</span></div>
     <div class="kick-meta">
-      <div class="kick-hangtime">${kick.hangtime.toFixed(1)} sec hang${resultBadge(kick.result)}${pbHtml}</div>
+      <div class="kick-hangtime">${kick.hangtime.toFixed(1)} sec hang${resultBadge(kick.result)}${pbHtml}${hiddenBadge}</div>
       ${fieldSummary ? `<div class="kick-field-summary">${fieldSummary}</div>` : ''}
       ${kick.notes ? `<div class="kick-notes">${escapeHtml(kick.notes)}</div>` : ''}
     </div>
@@ -113,7 +114,7 @@ function kickRowHtml(kick) {
   `;
 }
 
-function makeKick(hangtime, notes, fieldData, sessionId) {
+function makeKick(hangtime, notes, fieldData, sessionId, hiddenFromTeam) {
   return {
     id: `kick-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     sessionId,
@@ -124,6 +125,7 @@ function makeKick(hangtime, notes, fieldData, sessionId) {
     result: fieldData.result,
     notes: notes.trim(),
     position: fieldData,
+    hiddenFromTeam: hiddenFromTeam === true,
   };
 }
 
@@ -408,6 +410,8 @@ function startEdit(kickId) {
   setEditMode(kickId);
   hangtimeInput.value = kick.hangtime;
   notesInput.value = kick.notes || '';
+  const hideToggle = document.getElementById('hide-from-team');
+  if (hideToggle) hideToggle.checked = kick.hiddenFromTeam === true;
   loadFieldData(kick.position || null);
 
   fieldError.hidden = true;
@@ -520,6 +524,9 @@ form.addEventListener('submit', (event) => {
     return;
   }
 
+  const hideToggle = document.getElementById('hide-from-team');
+  const hiddenFromTeam = hideToggle ? hideToggle.checked : false;
+
   if (editingKickId) {
     const existing = getAllKicks().find((k) => k.id === editingKickId);
     if (existing) {
@@ -530,6 +537,7 @@ form.addEventListener('submit', (event) => {
         result: fieldData.result,
         notes: notesInput.value.trim(),
         position: fieldData,
+        hiddenFromTeam,
       };
       updateKick(updated);
     }
@@ -537,7 +545,7 @@ form.addEventListener('submit', (event) => {
   } else {
     const active = getActiveSession();
     if (!active) return;
-    const kick = makeKick(hangtimeInput.value, notesInput.value, fieldData, active.id);
+    const kick = makeKick(hangtimeInput.value, notesInput.value, fieldData, active.id, hiddenFromTeam);
     saveKick(kick);
   }
 

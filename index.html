@@ -31,7 +31,7 @@
   <header class="app-header player-only player-tab-team-only">
     <p class="eyebrow">PUNT TRACKER &middot; TEAM</p>
     <h1>My Team</h1>
-    <p class="subtitle">Live stats from your teammates &mdash; and you.</p>
+    <p class="subtitle">Live stats from your teammates &mdash; and you. <span id="team-live-indicator" class="live-indicator" data-state=""></span></p>
   </header>
 
   <section id="team-view-panel" class="coach-dashboard player-only player-tab-team-only">
@@ -44,7 +44,7 @@
   <header class="app-header coach-only">
     <p class="eyebrow">PUNT TRACKER &middot; COACH</p>
     <h1>Your Teams</h1>
-    <p class="subtitle">Live data from every player. No refresh needed.</p>
+    <p class="subtitle">Live data from every player. No refresh needed. <span id="coach-live-indicator" class="live-indicator" data-state=""></span></p>
   </header>
 
   <section id="coach-dashboard" class="coach-dashboard coach-only">
@@ -244,6 +244,16 @@
               name="notes"
               rows="2"
               placeholder="Wind, drop, direction, anything worth remembering"></textarea>
+          </div>
+
+          <div class="field hide-from-team-field">
+            <label class="hide-toggle">
+              <input type="checkbox" id="hide-from-team" name="hide-from-team">
+              <span class="hide-toggle-label">
+                <strong>Hide this kick from my team</strong>
+                <span class="hide-toggle-hint">Shanked it? Coach and teammates won't see this one. Still counts in your own stats.</span>
+              </span>
+            </label>
           </div>
 
           <div id="edit-mode-banner" class="edit-mode-banner" hidden>
@@ -505,6 +515,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-client.js"></script>
+  <script src="sync-queue.js"></script>
   <script src="coach.js"></script>
   <script src="team-view.js"></script>
   <script src="auth.js"></script>

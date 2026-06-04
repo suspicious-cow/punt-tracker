@@ -1922,6 +1922,109 @@ body.role-player .player-tab-bar {
   .join-code-text { text-align: center; font-size: 1.3rem; }
 }
 
+/* ---------- Hide-from-team toggle ---------- */
+
+.hide-from-team-field { margin-top: 4px; }
+
+.hide-toggle {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.hide-toggle input[type="checkbox"] {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--gold);
+  flex-shrink: 0;
+}
+
+.hide-toggle-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+
+.hide-toggle-hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.hide-toggle:has(input:checked) {
+  border-color: var(--gold);
+  background: rgba(200, 161, 60, 0.08);
+}
+
+.kick-hidden-badge {
+  display: inline-block;
+  background: var(--ink-soft);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* ---------- Sync queue badge ---------- */
+
+.sync-badge {
+  display: inline-block;
+  background: var(--bad);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-right: 4px;
+}
+
+/* ---------- Live / reconnecting indicator ---------- */
+
+.live-indicator {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
+.live-indicator[data-state=""] { display: none; }
+.live-indicator[data-state="live"] {
+  background: rgba(46, 125, 50, 0.2);
+  color: #b6f0ba;
+}
+.live-indicator[data-state="connecting"] {
+  background: rgba(200, 161, 60, 0.18);
+  color: var(--gold-bright);
+}
+.live-indicator[data-state="stale"] {
+  background: rgba(179, 38, 30, 0.2);
+  color: #ffb8b3;
+  animation: pulse-stale 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse-stale {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 /* ---------- Toasts ---------- */
 
 .toast-container {
