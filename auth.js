@@ -1,0 +1,376 @@
+// Auth + cloud sync for Phase 2.
+// Owns: sign-up/sign-in/sign-out flows, the account chip, the auth modals,
+// the first-time migration of localStorage data into the user's cloud account,
+// and the outgoing sync hooks called from storage.js after each local write.
+
+window.authState = {
+  user: null,
+  profile: null,
+  loaded: false,
+};
+
+let migrationInProgress = false;
+
+function db() {
+  return window.puntDb;
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// ---------- AUTH ----------
+
+async function initAuth() {
+  if (!db()) {
+    console.warn('[auth] supabase client not ready');
+    return;
+  }
+  const { data: { session } } = await db().auth.getSession();
+  await setAuthState(session ? session.user : null);
+  window.authState.loaded = true;
+  db().auth.onAuthStateChange(async (_event, newSession) => {
+    await setAuthState(newSession ? newSession.user : null);
+  });
+}
+
+async function setAuthState(user) {
+  window.authState.user = user;
+  window.authState.profile = null;
+  if (user) {
+    await ensureProfile(user);
+    window.authState.profile = await loadProfile(user.id);
+    await maybeMigrate(user.id);
+  }
+  renderAccountChip();
+}
+
+async function loadProfile(userId) {
+  const { data, error } = await db()
+    .from('user_profiles')
+    .select('id, name, role')
+    .eq('id', userId)
+    .maybeSingle();
+  if (error) {
+    console.error('[auth] profile load failed', error);
+    return null;
+  }
+  return data;
+}
+
+async function ensureProfile(user) {
+  const existing = await loadProfile(user.id);
+  if (existing) return existing;
+  const meta = user.user_metadata || {};
+  if (!meta.name || !meta.role) {
+    console.warn('[auth] no profile and no user_metadata to derive one');
+    return null;
+  }
+  const { error } = await db().from('user_profiles').insert({
+    id: user.id,
+    name: meta.name,
+    role: meta.role,
+  });
+  if (error) {
+    console.error('[auth] profile create failed', error);
+    return null;
+  }
+  return { id: user.id, name: meta.name, role: meta.role };
+}
+
+async function signUp({ email, password, name, role }) {
+  const { data, error } = await db().auth.signUp({
+    email,
+    password,
+    options: { data: { name, role } },
+  });
+  if (error) throw error;
+  if (data.session) {
+    await ensureProfile(data.user);
+  }
+  return data;
+}
+
+async function signIn({ email, password }) {
+  const { data, error } = await db().auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  return data;
+}
+
+async function signOut() {
+  await db().auth.signOut();
+}
+
+// ---------- MIGRATION ----------
+
+async function cloudKickCount(userId) {
+  const { count, error } = await db()
+    .from('kicks')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId);
+  if (error) {
+    console.error('[migrate] count check failed', error);
+    return null;
+  }
+  return count || 0;
+}
+
+async function maybeMigrate(userId) {
+  const localKicks = (typeof getAllKicks === 'function') ? getAllKicks() : [];
+  const localSessions = (typeof getAllSessions === 'function') ? getAllSessions() : [];
+  if (localKicks.length === 0 && localSessions.length === 0) return;
+  const cloudCount = await cloudKickCount(userId);
+  if (cloudCount === null) return;
+  if (cloudCount > 0) return;
+  showMigrationPrompt(localKicks.length, localSessions.length);
+}
+
+function kickToCloud(kick, userId) {
+  return {
+    id: kick.id,
+    user_id: userId,
+    session_id: kick.sessionId || null,
+    distance: kick.distance,
+    hangtime: kick.hangtime,
+    position: kick.position || null,
+    notes: kick.notes || '',
+    date: kick.date || null,
+    kicked_at: kick.timestamp || new Date().toISOString(),
+  };
+}
+
+function sessionToCloud(session, userId) {
+  return {
+    id: session.id,
+    user_id: userId,
+    date: session.date,
+    started_at: session.startedAt || new Date().toISOString(),
+    finished_at: session.finishedAt || null,
+  };
+}
+
+async function performMigration() {
+  const user = window.authState.user;
+  if (!user) return;
+  migrationInProgress = true;
+  try {
+    const sessions = getAllSessions();
+    const kicks = getAllKicks();
+    if (sessions.length) {
+      const rows = sessions.map((s) => sessionToCloud(s, user.id));
+      const { error } = await db().from('sessions').upsert(rows, { onConflict: 'id' });
+      if (error) throw error;
+    }
+    if (kicks.length) {
+      const rows = kicks.map((k) => kickToCloud(k, user.id));
+      const { error } = await db().from('kicks').upsert(rows, { onConflict: 'id' });
+      if (error) throw error;
+    }
+    closeAuthModal();
+    showToast(`Uploaded ${kicks.length} kicks and ${sessions.length} sessions.`, 'good');
+  } catch (err) {
+    console.error('[migrate] failed', err);
+    showToast('Upload failed: ' + (err.message || err), 'bad');
+  } finally {
+    migrationInProgress = false;
+  }
+}
+
+// ---------- OUTGOING SYNC (called from storage.js after each local write) ----------
+
+window.cloudSync = {
+  upsertKick(kick) {
+    const user = window.authState.user;
+    if (!user) return;
+    db().from('kicks').upsert(kickToCloud(kick, user.id), { onConflict: 'id' })
+      .then(({ error }) => { if (error) console.error('[sync] kick upsert', error); });
+  },
+  deleteKick(kickId) {
+    const user = window.authState.user;
+    if (!user) return;
+    db().from('kicks').delete().eq('id', kickId).eq('user_id', user.id)
+      .then(({ error }) => { if (error) console.error('[sync] kick delete', error); });
+  },
+  upsertSession(session) {
+    const user = window.authState.user;
+    if (!user) return;
+    db().from('sessions').upsert(sessionToCloud(session, user.id), { onConflict: 'id' })
+      .then(({ error }) => { if (error) console.error('[sync] session upsert', error); });
+  },
+  deleteSession(sessionId) {
+    const user = window.authState.user;
+    if (!user) return;
+    db().from('sessions').delete().eq('id', sessionId).eq('user_id', user.id)
+      .then(({ error }) => { if (error) console.error('[sync] session delete', error); });
+  },
+};
+
+// ---------- UI ----------
+
+function renderAccountChip() {
+  const chip = document.getElementById('account-chip');
+  if (!chip) return;
+  const { user, profile } = window.authState;
+  if (!user) {
+    chip.innerHTML = `
+      <button type="button" class="account-btn" data-auth-action="open-signin">Sign in</button>
+      <button type="button" class="account-btn account-btn-primary" data-auth-action="open-signup">Sign up</button>
+    `;
+    return;
+  }
+  const name = (profile && profile.name) || user.email || 'Account';
+  const roleLabel = profile && profile.role ? ` &middot; ${escapeHtml(profile.role)}` : '';
+  chip.innerHTML = `
+    <span class="account-name">${escapeHtml(name)}${roleLabel}</span>
+    <button type="button" class="account-btn" data-auth-action="signout">Sign out</button>
+  `;
+}
+
+function openAuthModal(modalId) {
+  const overlay = document.getElementById('auth-overlay');
+  const modals = overlay.querySelectorAll('.auth-modal');
+  modals.forEach((m) => { m.hidden = m.id !== modalId; });
+  overlay.hidden = false;
+  document.body.classList.add('modal-open');
+  const firstInput = overlay.querySelector(`#${modalId} input`);
+  if (firstInput) setTimeout(() => firstInput.focus(), 50);
+  clearFormErrors();
+}
+
+function closeAuthModal() {
+  const overlay = document.getElementById('auth-overlay');
+  if (!overlay) return;
+  overlay.hidden = true;
+  document.body.classList.remove('modal-open');
+  overlay.querySelectorAll('form').forEach((f) => f.reset());
+  clearFormErrors();
+}
+
+function clearFormErrors() {
+  document.querySelectorAll('.auth-form-error').forEach((el) => {
+    el.textContent = '';
+    el.hidden = true;
+  });
+}
+
+function setFormError(formId, message) {
+  const el = document.querySelector(`#${formId} .auth-form-error`);
+  if (!el) return;
+  el.textContent = message;
+  el.hidden = !message;
+}
+
+function showMigrationPrompt(kickCount, sessionCount) {
+  const k = `${kickCount} kick${kickCount === 1 ? '' : 's'}`;
+  const s = `${sessionCount} session${sessionCount === 1 ? '' : 's'}`;
+  document.getElementById('migration-summary').textContent =
+    `You have ${k} and ${s} logged on this device. Upload to your account?`;
+  openAuthModal('migrate-modal');
+}
+
+function showToast(message, kind) {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${kind || 'info'}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('toast-fade');
+    setTimeout(() => toast.remove(), 400);
+  }, 3200);
+}
+
+// ---------- EVENT WIRING ----------
+
+function wireAuthEvents() {
+  document.body.addEventListener('click', async (e) => {
+    const trigger = e.target.closest('[data-auth-action]');
+    if (!trigger) return;
+    const action = trigger.dataset.authAction;
+    if (action === 'open-signin') openAuthModal('signin-modal');
+    if (action === 'open-signup') openAuthModal('signup-modal');
+    if (action === 'switch-to-signin') openAuthModal('signin-modal');
+    if (action === 'switch-to-signup') openAuthModal('signup-modal');
+    if (action === 'close') closeAuthModal();
+    if (action === 'signout') {
+      trigger.disabled = true;
+      try { await signOut(); } finally { trigger.disabled = false; }
+    }
+    if (action === 'migrate-yes') {
+      trigger.disabled = true;
+      try { await performMigration(); } finally { trigger.disabled = false; }
+    }
+    if (action === 'migrate-no') {
+      closeAuthModal();
+    }
+  });
+
+  document.getElementById('auth-overlay').addEventListener('click', (e) => {
+    if (e.target.id === 'auth-overlay' && !migrationInProgress) closeAuthModal();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !migrationInProgress) closeAuthModal();
+  });
+
+  document.getElementById('signin-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    setFormError('signin-form', '');
+    const submit = e.target.querySelector('button[type="submit"]');
+    submit.disabled = true;
+    try {
+      const email = e.target.elements['signin-email'].value.trim();
+      const password = e.target.elements['signin-password'].value;
+      await signIn({ email, password });
+      closeAuthModal();
+      showToast('Signed in', 'good');
+    } catch (err) {
+      setFormError('signin-form', err.message || 'Sign in failed');
+    } finally {
+      submit.disabled = false;
+    }
+  });
+
+  document.getElementById('signup-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    setFormError('signup-form', '');
+    const submit = e.target.querySelector('button[type="submit"]');
+    submit.disabled = true;
+    try {
+      const email = e.target.elements['signup-email'].value.trim();
+      const password = e.target.elements['signup-password'].value;
+      const name = e.target.elements['signup-name'].value.trim();
+      const role = e.target.elements['signup-role'].value;
+      if (!name) throw new Error('Name is required');
+      if (!role) throw new Error('Pick coach or player');
+      if (password.length < 6) throw new Error('Password must be at least 6 characters');
+      const result = await signUp({ email, password, name, role });
+      if (!result.session) {
+        setFormError(
+          'signup-form',
+          'Account created. Check your email for a confirmation link, then come back and sign in.'
+        );
+      } else {
+        closeAuthModal();
+        showToast(`Welcome, ${name}.`, 'good');
+      }
+    } catch (err) {
+      setFormError('signup-form', err.message || 'Sign up failed');
+    } finally {
+      submit.disabled = false;
+    }
+  });
+}
+
+// ---------- INIT ----------
+
+document.addEventListener('DOMContentLoaded', () => {
+  wireAuthEvents();
+  initAuth();
+});

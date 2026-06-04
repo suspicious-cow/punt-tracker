@@ -102,6 +102,7 @@ function startSession(date, startedAt) {
     finishedAt: null,
   };
   writeSessions([...getAllSessions(), session]);
+  if (window.cloudSync) window.cloudSync.upsertSession(session);
   return session;
 }
 
@@ -111,7 +112,9 @@ function finishSession(sessionId, finishedAt) {
     s.id === sessionId ? { ...s, finishedAt } : s
   );
   writeSessions(updated);
-  return updated.find((s) => s.id === sessionId);
+  const finished = updated.find((s) => s.id === sessionId);
+  if (window.cloudSync && finished) window.cloudSync.upsertSession(finished);
+  return finished;
 }
 
 function getKicksForSession(sessionId) {
@@ -119,21 +122,28 @@ function getKicksForSession(sessionId) {
 }
 
 function saveKick(kick) {
-  return writeKicks([...getAllKicks(), kick]);
+  const result = writeKicks([...getAllKicks(), kick]);
+  if (window.cloudSync) window.cloudSync.upsertKick(kick);
+  return result;
 }
 
 function updateKick(updatedKick) {
   const existing = getAllKicks();
-  return writeKicks(existing.map((k) => (k.id === updatedKick.id ? updatedKick : k)));
+  const result = writeKicks(existing.map((k) => (k.id === updatedKick.id ? updatedKick : k)));
+  if (window.cloudSync) window.cloudSync.upsertKick(updatedKick);
+  return result;
 }
 
 function deleteKick(kickId) {
-  return writeKicks(getAllKicks().filter((k) => k.id !== kickId));
+  const result = writeKicks(getAllKicks().filter((k) => k.id !== kickId));
+  if (window.cloudSync) window.cloudSync.deleteKick(kickId);
+  return result;
 }
 
 function deleteSession(sessionId) {
   writeSessions(getAllSessions().filter((s) => s.id !== sessionId));
   writeKicks(getAllKicks().filter((k) => k.sessionId !== sessionId));
+  if (window.cloudSync) window.cloudSync.deleteSession(sessionId);
   return { sessionId };
 }
 

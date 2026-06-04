@@ -1,4 +1,4 @@
-const CACHE_NAME = 'punt-tracker-v3';
+const CACHE_NAME = 'punt-tracker-v4';
 const APP_SHELL = [
   './',
   './index.html',
@@ -10,6 +10,7 @@ const APP_SHELL = [
   './stopwatch.js',
   './charts.js',
   './supabase-client.js',
+  './auth.js',
   './icon.svg',
   './manifest.json',
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
@@ -41,6 +42,8 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
+  if (url.hostname.endsWith('.supabase.co')) return;
+
   const isNavigation = event.request.mode === 'navigate';
 
   event.respondWith(

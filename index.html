@@ -15,6 +15,8 @@
   <link rel="stylesheet" href="tracker.css">
 </head>
 <body>
+  <div id="account-chip" class="account-chip"></div>
+
   <header class="app-header">
     <p class="eyebrow">PUNT TRACKER</p>
     <h1>Log a Kick</h1>
@@ -266,9 +268,81 @@
     <p class="muted">Open source &middot; <a href="https://github.com/suspicious-cow/punt-tracker">View on GitHub</a></p>
   </footer>
 
+  <div id="auth-overlay" class="auth-overlay" hidden>
+    <div class="auth-modal" id="signin-modal" hidden>
+      <button type="button" class="auth-close" data-auth-action="close" aria-label="Close">&times;</button>
+      <h2>Sign in</h2>
+      <form id="signin-form" novalidate>
+        <label>
+          <span>Email</span>
+          <input type="email" name="signin-email" required autocomplete="email">
+        </label>
+        <label>
+          <span>Password</span>
+          <input type="password" name="signin-password" required autocomplete="current-password">
+        </label>
+        <p class="auth-form-error" hidden></p>
+        <button type="submit" class="auth-submit">Sign in</button>
+        <p class="auth-switch">
+          New here?
+          <button type="button" class="auth-link" data-auth-action="switch-to-signup">Create an account</button>
+        </p>
+      </form>
+    </div>
+
+    <div class="auth-modal" id="signup-modal" hidden>
+      <button type="button" class="auth-close" data-auth-action="close" aria-label="Close">&times;</button>
+      <h2>Create account</h2>
+      <form id="signup-form" novalidate>
+        <label>
+          <span>Your name</span>
+          <input type="text" name="signup-name" required maxlength="40" autocomplete="name">
+        </label>
+        <fieldset class="role-fieldset">
+          <legend>You are a&hellip;</legend>
+          <label class="role-option">
+            <input type="radio" name="signup-role" value="player" checked>
+            <span>Player</span>
+          </label>
+          <label class="role-option">
+            <input type="radio" name="signup-role" value="coach">
+            <span>Coach</span>
+          </label>
+        </fieldset>
+        <label>
+          <span>Email</span>
+          <input type="email" name="signup-email" required autocomplete="email">
+        </label>
+        <label>
+          <span>Password</span>
+          <input type="password" name="signup-password" required minlength="6" autocomplete="new-password">
+        </label>
+        <p class="auth-form-error" hidden></p>
+        <button type="submit" class="auth-submit">Create account</button>
+        <p class="auth-switch">
+          Already have one?
+          <button type="button" class="auth-link" data-auth-action="switch-to-signin">Sign in</button>
+        </p>
+      </form>
+    </div>
+
+    <div class="auth-modal" id="migrate-modal" hidden>
+      <h2>Upload your kicks?</h2>
+      <p id="migration-summary" class="auth-modal-body"></p>
+      <p class="auth-modal-hint">Your data stays on this device too. Uploading just gives your coach and teammates access.</p>
+      <div class="auth-modal-actions">
+        <button type="button" class="auth-submit auth-submit-ghost" data-auth-action="migrate-no">Not now</button>
+        <button type="button" class="auth-submit" data-auth-action="migrate-yes">Yes, upload</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-client.js"></script>
+  <script src="auth.js"></script>
   <script src="storage.js"></script>
   <script src="stats.js"></script>
   <script src="field.js"></script>
