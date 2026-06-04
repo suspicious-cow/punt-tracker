@@ -17,13 +17,26 @@
 <body>
   <div id="account-chip" class="account-chip"></div>
 
-  <header class="app-header">
+  <header class="app-header player-only">
     <p class="eyebrow">PUNT TRACKER</p>
     <h1>Log a Kick</h1>
     <p class="subtitle">Every kick. Every session. The numbers don't lie.</p>
   </header>
 
-  <main>
+  <header class="app-header coach-only">
+    <p class="eyebrow">PUNT TRACKER &middot; COACH</p>
+    <h1>Your Teams</h1>
+    <p class="subtitle">Live data from every player. No refresh needed.</p>
+  </header>
+
+  <section id="coach-dashboard" class="coach-dashboard coach-only">
+    <div id="coach-teams-list" class="coach-teams-list" aria-live="polite"></div>
+    <p id="coach-no-teams" class="coach-empty-dashboard" hidden>
+      You haven&rsquo;t created a team yet. Click <strong>Teams</strong> in the account bar to make one and share the code.
+    </p>
+  </section>
+
+  <main class="player-only">
     <aside class="stats-sidebar">
       <div class="stat-card">
         <h3>Best Punt</h3>
@@ -264,8 +277,12 @@
     </div>
   </main>
 
-  <footer>
+  <footer class="player-only">
     <p class="muted">Open source &middot; <a href="https://github.com/suspicious-cow/punt-tracker">View on GitHub</a></p>
+  </footer>
+
+  <footer class="coach-only">
+    <p class="muted">Live updates via Supabase Realtime &middot; <a href="https://github.com/suspicious-cow/punt-tracker">View on GitHub</a></p>
   </footer>
 
   <div id="auth-overlay" class="auth-overlay" hidden>
@@ -466,6 +483,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-client.js"></script>
+  <script src="coach.js"></script>
   <script src="auth.js"></script>
   <script src="storage.js"></script>
   <script src="stats.js"></script>

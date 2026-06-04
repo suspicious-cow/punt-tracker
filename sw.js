@@ -1,4 +1,4 @@
-const CACHE_NAME = 'punt-tracker-v6';
+const CACHE_NAME = 'punt-tracker-v7';
 const APP_SHELL = [
   './',
   './index.html',
@@ -11,6 +11,7 @@ const APP_SHELL = [
   './charts.js',
   './supabase-client.js',
   './auth.js',
+  './coach.js',
   './icon.svg',
   './manifest.json',
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',

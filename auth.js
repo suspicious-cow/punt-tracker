@@ -51,12 +51,22 @@ async function setAuthState(user) {
     window.authState.profile = await loadProfile(user.id);
     if (!window.authState.profile) {
       renderAccountChip();
+      applyRoleUI(null);
       openAuthModal('profile-modal');
       return;
     }
     await maybeMigrate(user.id);
   }
   renderAccountChip();
+  applyRoleUI(window.authState.profile ? window.authState.profile.role : null);
+}
+
+function applyRoleUI(role) {
+  if (role === 'coach') {
+    if (window.coachDashboard) window.coachDashboard.activate();
+  } else {
+    if (window.coachDashboard) window.coachDashboard.deactivate();
+  }
 }
 
 async function loadProfile(userId) {
@@ -450,6 +460,8 @@ function showToast(message, kind) {
     setTimeout(() => toast.remove(), 400);
   }, 3200);
 }
+
+window.showToast = showToast;
 
 // ---------- EVENT WIRING ----------
 

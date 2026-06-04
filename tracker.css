@@ -1492,6 +1492,203 @@ body.modal-open { overflow: hidden; }
 
 .auth-modal-actions .auth-submit { flex: 1; }
 
+/* ---------- Role-gated UI ---------- */
+
+.coach-only { display: none; }
+body.role-coach .player-only { display: none; }
+body.role-coach .coach-only { display: block; }
+
+/* ---------- Coach dashboard ---------- */
+
+.coach-dashboard {
+  display: grid;
+  gap: 18px;
+  margin-top: 8px;
+}
+
+.coach-teams-list {
+  display: grid;
+  gap: 18px;
+}
+
+.coach-loading,
+.coach-error,
+.coach-empty-dashboard {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 22px 18px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.coach-empty-dashboard strong { color: var(--ink); }
+.coach-error { color: var(--bad); }
+
+.coach-team-block {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--gold);
+  border-radius: 12px;
+  padding: 18px 18px 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.coach-team-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 16px;
+}
+
+.coach-team-titles h2 {
+  font-size: 1.4rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.coach-team-meta {
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  color: var(--gold-dim);
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.coach-team-code {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 10px 6px 12px;
+}
+
+.coach-team-code-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.coach-team-code-text {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+}
+
+.coach-empty-team {
+  font-size: 0.9rem;
+  color: var(--muted);
+  text-align: center;
+  margin: 8px 0;
+  padding: 18px 12px;
+  background: var(--bg);
+  border-radius: 8px;
+}
+
+.coach-players-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.player-card {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.player-card-empty {
+  opacity: 0.85;
+}
+
+.player-card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.player-card-header h3 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player-last-active {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.player-empty-state {
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: center;
+  padding: 6px 0;
+}
+
+.player-stats {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.player-stat {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 4px;
+  text-align: center;
+}
+
+.player-stat-num {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+.player-stat-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+@media (max-width: 520px) {
+  .player-stats { grid-template-columns: repeat(3, 1fr); }
+  .coach-team-header { gap: 12px; }
+  .coach-team-code { width: 100%; justify-content: space-between; }
+}
+
 /* ---------- Teams ---------- */
 
 .auth-modal-wide { max-width: 520px; }
