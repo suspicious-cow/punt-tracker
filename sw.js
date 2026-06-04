@@ -1,4 +1,4 @@
-const CACHE_NAME = 'punt-tracker-v2';
+const CACHE_NAME = 'punt-tracker-v3';
 const APP_SHELL = [
   './',
   './index.html',
@@ -9,9 +9,11 @@ const APP_SHELL = [
   './field.js',
   './stopwatch.js',
   './charts.js',
+  './supabase-client.js',
   './icon.svg',
   './manifest.json',
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
 ];
 
 self.addEventListener('install', (event) => {
