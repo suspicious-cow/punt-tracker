@@ -53,12 +53,20 @@ $$;
 -- Alphabet excludes 0/O/1/I/l so the code is easier to read aloud + type.
 -- ============================================================
 
+-- IMPORTANT: this function returns TABLE(id, name, join_code, created_at), and
+-- those output column names are in scope inside the function body. Without the
+-- `#variable_conflict use_column` directive (or fully-qualified column refs),
+-- a body query like `where id = v_uid` is ambiguous between the OUT param `id`
+-- and `user_profiles.id`, and Postgres raises "column reference 'id' is
+-- ambiguous". The directive makes column refs win — the original version of
+-- this function hit that bug in production on 2026-06-04.
 create or replace function public.create_team(p_name text)
 returns table (id uuid, name text, join_code text, created_at timestamptz)
 language plpgsql
 security definer
 set search_path = public
 as $$
+#variable_conflict use_column
 declare
   v_uid uuid;
   v_role text;
@@ -73,7 +81,7 @@ begin
     raise exception 'must be signed in';
   end if;
 
-  select role into v_role from public.user_profiles where id = v_uid;
+  select up.role into v_role from public.user_profiles up where up.id = v_uid;
   if v_role is null then
     raise exception 'finish setting up your profile first';
   end if;
