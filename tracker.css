@@ -1498,7 +1498,12 @@ body.modal-open { overflow: hidden; }
 body.role-coach .player-only { display: none; }
 body.role-coach .coach-only { display: block; }
 
-/* ---------- Player tab bar ---------- */
+/* ---------- Player tabs (Log Kicks | My Team) ---------- */
+/* The hidden attribute alone doesn't beat author display rules
+   like `main { display: grid }`. Use body-class + !important. */
+
+body:not(.player-tab-team) .player-tab-team-only { display: none !important; }
+body.player-tab-team .player-tab-kicks-only { display: none !important; }
 
 .player-tab-bar { display: none; }
 

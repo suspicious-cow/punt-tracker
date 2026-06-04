@@ -274,12 +274,7 @@
 
   function setTab(tab) {
     activeTab = tab;
-    document.querySelectorAll('.player-tab-kicks-only').forEach((el) => {
-      el.hidden = tab !== 'kicks';
-    });
-    document.querySelectorAll('.player-tab-team-only').forEach((el) => {
-      el.hidden = tab !== 'team';
-    });
+    document.body.classList.toggle('player-tab-team', tab === 'team');
     document.querySelectorAll('[data-team-action]').forEach((btn) => {
       btn.classList.toggle('player-tab-active', btn.dataset.teamAction === `tab-${tab}`);
     });
@@ -309,13 +304,12 @@
     },
     deactivate() {
       document.body.classList.remove('role-player');
+      document.body.classList.remove('player-tab-team');
       unsubscribe();
       lastData = null;
       activeTab = 'kicks';
       const list = document.getElementById('team-view-list');
       if (list) list.innerHTML = '';
-      document.querySelectorAll('.player-tab-kicks-only').forEach((el) => { el.hidden = false; });
-      document.querySelectorAll('.player-tab-team-only').forEach((el) => { el.hidden = true; });
     },
     refresh,
   };
