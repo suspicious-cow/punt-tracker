@@ -49,6 +49,11 @@ async function setAuthState(user) {
   if (user) {
     await ensureProfile(user);
     window.authState.profile = await loadProfile(user.id);
+    if (!window.authState.profile) {
+      renderAccountChip();
+      openAuthModal('profile-modal');
+      return;
+    }
     await maybeMigrate(user.id);
   }
   renderAccountChip();
@@ -119,6 +124,74 @@ async function requestPasswordReset({ email }) {
 async function setNewPassword({ password }) {
   const { error } = await db().auth.updateUser({ password });
   if (error) throw error;
+}
+
+async function completeProfile({ name, role }) {
+  const user = window.authState.user;
+  if (!user) throw new Error('not signed in');
+  const { error } = await db().from('user_profiles').upsert(
+    { id: user.id, name, role },
+    { onConflict: 'id' }
+  );
+  if (error) throw error;
+  window.authState.profile = { id: user.id, name, role };
+  renderAccountChip();
+  await maybeMigrate(user.id);
+}
+
+// ---------- TEAMS ----------
+
+let lastCreatedTeam = null;
+
+async function loadMyTeams() {
+  const user = window.authState.user;
+  if (!user) return { owned: [], joined: [] };
+  const [ownedRes, memberRes] = await Promise.all([
+    db().from('teams')
+      .select('id, name, join_code, created_at')
+      .eq('owner_id', user.id)
+      .order('created_at', { ascending: true }),
+    db().from('team_members')
+      .select('team_id, joined_at, teams(id, name, join_code, owner_id, created_at, owner:user_profiles!teams_owner_id_fkey(name))')
+      .eq('user_id', user.id)
+      .order('joined_at', { ascending: true }),
+  ]);
+  if (ownedRes.error) {
+    console.error('[teams] owned load failed', ownedRes.error);
+  }
+  if (memberRes.error) {
+    console.error('[teams] member load failed', memberRes.error);
+  }
+  const owned = ownedRes.data || [];
+  const joined = (memberRes.data || [])
+    .map((row) => row.teams)
+    .filter(Boolean)
+    .filter((team) => team.owner_id !== user.id);
+  return { owned, joined };
+}
+
+async function createTeam(name) {
+  const { data, error } = await db().rpc('create_team', { p_name: name });
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) throw new Error('create_team returned no row');
+  return row;
+}
+
+async function joinTeamByCode(code) {
+  const { data, error } = await db().rpc('join_team_by_code', { code });
+  if (error) throw error;
+  return data;
+}
+
+async function copyToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (err) {
+    console.warn('[teams] clipboard write failed', err);
+    return false;
+  }
 }
 
 // ---------- MIGRATION ----------
@@ -240,10 +313,87 @@ function renderAccountChip() {
   }
   const name = (profile && profile.name) || user.email || 'Account';
   const roleLabel = profile && profile.role ? ` &middot; ${escapeHtml(profile.role)}` : '';
+  const teamsBtn = profile
+    ? `<button type="button" class="account-btn" data-auth-action="open-teams">Teams</button>`
+    : '';
   chip.innerHTML = `
     <span class="account-name">${escapeHtml(name)}${roleLabel}</span>
+    ${teamsBtn}
     <button type="button" class="account-btn" data-auth-action="signout">Sign out</button>
   `;
+}
+
+function renderTeamsList({ owned, joined }) {
+  const profile = window.authState.profile;
+  const role = profile ? profile.role : null;
+  const list = document.getElementById('teams-list');
+  const empty = document.getElementById('teams-empty');
+  const createBtn = document.getElementById('teams-action-create');
+  const joinBtn = document.getElementById('teams-action-join');
+
+  createBtn.hidden = role !== 'coach';
+  joinBtn.hidden = role !== 'player';
+
+  const items = [];
+  owned.forEach((team) => {
+    items.push(`
+      <div class="team-row team-row-owned">
+        <div class="team-row-main">
+          <div class="team-row-name">${escapeHtml(team.name)}</div>
+          <div class="team-row-meta">You coach this team</div>
+        </div>
+        <div class="team-row-code">
+          <span class="team-row-code-text">${escapeHtml(team.join_code)}</span>
+          <button type="button" class="join-code-copy join-code-copy-small" data-auth-action="copy-team-code" data-code="${escapeHtml(team.join_code)}">Copy</button>
+        </div>
+      </div>
+    `);
+  });
+  joined.forEach((team) => {
+    const owner = team.owner && team.owner.name ? team.owner.name : 'Coach';
+    items.push(`
+      <div class="team-row">
+        <div class="team-row-main">
+          <div class="team-row-name">${escapeHtml(team.name)}</div>
+          <div class="team-row-meta">Coach: ${escapeHtml(owner)}</div>
+        </div>
+      </div>
+    `);
+  });
+
+  list.innerHTML = items.join('');
+  if (items.length === 0) {
+    empty.hidden = false;
+    empty.textContent = role === 'coach'
+      ? "You haven't created a team yet. Hit Create team to make one."
+      : "You haven't joined a team yet. Ask your coach for a 10-character join code.";
+  } else {
+    empty.hidden = true;
+  }
+}
+
+async function openTeamsModal() {
+  openAuthModal('teams-modal');
+  const list = document.getElementById('teams-list');
+  const empty = document.getElementById('teams-empty');
+  list.innerHTML = '<p class="teams-loading">Loading&hellip;</p>';
+  empty.hidden = true;
+  document.getElementById('teams-action-create').hidden = true;
+  document.getElementById('teams-action-join').hidden = true;
+  try {
+    const teams = await loadMyTeams();
+    renderTeamsList(teams);
+  } catch (err) {
+    console.error('[teams] open failed', err);
+    list.innerHTML = `<p class="teams-error">Couldn't load teams: ${escapeHtml(err.message || String(err))}</p>`;
+  }
+}
+
+function showCreatedTeam(team) {
+  lastCreatedTeam = team;
+  document.getElementById('created-team-name').textContent = team.name;
+  document.getElementById('created-team-code').textContent = team.join_code;
+  openAuthModal('created-team-modal');
 }
 
 function openAuthModal(modalId) {
@@ -313,6 +463,10 @@ function wireAuthEvents() {
     if (action === 'switch-to-signin') openAuthModal('signin-modal');
     if (action === 'switch-to-signup') openAuthModal('signup-modal');
     if (action === 'open-reset') openAuthModal('reset-modal');
+    if (action === 'open-teams') openTeamsModal();
+    if (action === 'open-create-team') openAuthModal('create-team-modal');
+    if (action === 'open-join-team') openAuthModal('join-team-modal');
+    if (action === 'back-to-teams') openTeamsModal();
     if (action === 'close') closeAuthModal();
     if (action === 'signout') {
       trigger.disabled = true;
@@ -324,6 +478,20 @@ function wireAuthEvents() {
     }
     if (action === 'migrate-no') {
       closeAuthModal();
+    }
+    if (action === 'copy-team-code') {
+      const code = trigger.dataset.code;
+      if (code) {
+        const ok = await copyToClipboard(code);
+        showToast(ok ? `Copied ${code}` : `Code: ${code}`, ok ? 'good' : 'info');
+      }
+    }
+    if (action === 'copy-created-code') {
+      const code = lastCreatedTeam ? lastCreatedTeam.join_code : '';
+      if (code) {
+        const ok = await copyToClipboard(code);
+        showToast(ok ? `Copied ${code}` : `Code: ${code}`, ok ? 'good' : 'info');
+      }
     }
   });
 
@@ -384,6 +552,63 @@ function wireAuthEvents() {
       showToast('Password updated. You’re signed in.', 'good');
     } catch (err) {
       setFormError('newpass-form', err.message || 'Failed to update password');
+    } finally {
+      submit.disabled = false;
+    }
+  });
+
+  document.getElementById('profile-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    setFormError('profile-form', '');
+    const submit = e.target.querySelector('button[type="submit"]');
+    submit.disabled = true;
+    try {
+      const name = e.target.elements['profile-name'].value.trim();
+      const role = e.target.elements['profile-role'].value;
+      if (!name) throw new Error('Name is required');
+      if (role !== 'coach' && role !== 'player') throw new Error('Pick coach or player');
+      await completeProfile({ name, role });
+      closeAuthModal();
+      showToast(`Welcome, ${name}.`, 'good');
+    } catch (err) {
+      setFormError('profile-form', err.message || 'Could not save profile');
+    } finally {
+      submit.disabled = false;
+    }
+  });
+
+  document.getElementById('create-team-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    setFormError('create-team-form', '');
+    const submit = e.target.querySelector('button[type="submit"]');
+    submit.disabled = true;
+    try {
+      const name = e.target.elements['team-name'].value.trim();
+      if (!name) throw new Error('Team name is required');
+      const team = await createTeam(name);
+      e.target.reset();
+      showCreatedTeam(team);
+    } catch (err) {
+      setFormError('create-team-form', err.message || 'Could not create team');
+    } finally {
+      submit.disabled = false;
+    }
+  });
+
+  document.getElementById('join-team-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    setFormError('join-team-form', '');
+    const submit = e.target.querySelector('button[type="submit"]');
+    submit.disabled = true;
+    try {
+      const raw = e.target.elements['join-code'].value.trim().toUpperCase();
+      if (raw.length !== 10) throw new Error('Join codes are exactly 10 characters');
+      await joinTeamByCode(raw);
+      e.target.reset();
+      showToast('Joined the team.', 'good');
+      await openTeamsModal();
+    } catch (err) {
+      setFormError('join-team-form', err.message || 'Could not join team');
     } finally {
       submit.disabled = false;
     }

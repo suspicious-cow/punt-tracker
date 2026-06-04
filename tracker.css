@@ -1492,6 +1492,145 @@ body.modal-open { overflow: hidden; }
 
 .auth-modal-actions .auth-submit { flex: 1; }
 
+/* ---------- Teams ---------- */
+
+.auth-modal-wide { max-width: 520px; }
+
+.teams-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.teams-empty,
+.teams-loading,
+.teams-error {
+  font-size: 0.9rem;
+  color: var(--muted);
+  text-align: center;
+  margin: 12px 0 16px;
+  line-height: 1.4;
+}
+
+.teams-error { color: var(--bad); }
+
+.team-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.team-row-owned {
+  border-left: 3px solid var(--gold);
+}
+
+.team-row-main { min-width: 0; flex: 1; }
+
+.team-row-name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.team-row-meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.team-row-code {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.team-row-code-text {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.08em;
+  background: #fff;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+}
+
+.join-code-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--bg);
+  border: 2px solid var(--gold);
+  border-radius: 10px;
+  padding: 18px 16px;
+  margin: 12px 0 14px;
+}
+
+.join-code-text {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: 0.18em;
+  flex: 1;
+  word-break: break-all;
+}
+
+.join-code-copy {
+  background: var(--ink);
+  color: var(--gold-bright);
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.join-code-copy:hover { background: var(--ink-soft); }
+
+.join-code-copy-small {
+  padding: 6px 10px;
+  font-size: 0.75rem;
+}
+
+.join-code-input {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .team-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .team-row-code { justify-content: space-between; }
+  .join-code-display { flex-direction: column; align-items: stretch; gap: 10px; }
+  .join-code-text { text-align: center; font-size: 1.3rem; }
+}
+
 /* ---------- Toasts ---------- */
 
 .toast-container {

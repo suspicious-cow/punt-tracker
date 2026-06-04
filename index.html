@@ -368,6 +368,97 @@
         <button type="button" class="auth-submit" data-auth-action="migrate-yes">Yes, upload</button>
       </div>
     </div>
+
+    <div class="auth-modal" id="profile-modal" hidden>
+      <h2>Finish your profile</h2>
+      <p class="auth-modal-hint">One more step before you can use teams.</p>
+      <form id="profile-form" novalidate>
+        <label>
+          <span>Your name</span>
+          <input type="text" name="profile-name" required maxlength="40" autocomplete="name">
+        </label>
+        <fieldset class="role-fieldset">
+          <legend>You are a&hellip;</legend>
+          <label class="role-option">
+            <input type="radio" name="profile-role" value="player" checked>
+            <span>Player</span>
+          </label>
+          <label class="role-option">
+            <input type="radio" name="profile-role" value="coach">
+            <span>Coach</span>
+          </label>
+        </fieldset>
+        <p class="auth-form-error" hidden></p>
+        <button type="submit" class="auth-submit">Save</button>
+      </form>
+    </div>
+
+    <div class="auth-modal auth-modal-wide" id="teams-modal" hidden>
+      <button type="button" class="auth-close" data-auth-action="close" aria-label="Close">&times;</button>
+      <h2>My Teams</h2>
+      <div id="teams-list" class="teams-list" aria-live="polite"></div>
+      <p id="teams-empty" class="teams-empty" hidden></p>
+      <div class="auth-modal-actions">
+        <button type="button" class="auth-submit auth-submit-ghost" id="teams-action-join" data-auth-action="open-join-team" hidden>Join a team</button>
+        <button type="button" class="auth-submit" id="teams-action-create" data-auth-action="open-create-team" hidden>Create team</button>
+      </div>
+    </div>
+
+    <div class="auth-modal" id="create-team-modal" hidden>
+      <button type="button" class="auth-close" data-auth-action="close" aria-label="Close">&times;</button>
+      <h2>Create a team</h2>
+      <form id="create-team-form" novalidate>
+        <label>
+          <span>Team name</span>
+          <input type="text" name="team-name" required maxlength="60" placeholder="Conroe Tigers" autocomplete="off">
+        </label>
+        <p class="auth-modal-hint">You&rsquo;ll get a 10-character join code to share with your players.</p>
+        <p class="auth-form-error" hidden></p>
+        <div class="auth-modal-actions">
+          <button type="button" class="auth-submit auth-submit-ghost" data-auth-action="back-to-teams">Back</button>
+          <button type="submit" class="auth-submit">Create team</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="auth-modal" id="created-team-modal" hidden>
+      <h2>Team created</h2>
+      <p class="auth-modal-body"><strong id="created-team-name"></strong> is live. Share this code with your players:</p>
+      <div class="join-code-display">
+        <span id="created-team-code" class="join-code-text">&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</span>
+        <button type="button" class="join-code-copy" data-auth-action="copy-created-code">Copy</button>
+      </div>
+      <p class="auth-modal-hint">Players sign up, hit the Teams button, and paste this code. You can always come back to find it.</p>
+      <button type="button" class="auth-submit" data-auth-action="back-to-teams">Done</button>
+    </div>
+
+    <div class="auth-modal" id="join-team-modal" hidden>
+      <button type="button" class="auth-close" data-auth-action="close" aria-label="Close">&times;</button>
+      <h2>Join a team</h2>
+      <form id="join-team-form" novalidate>
+        <label>
+          <span>Join code</span>
+          <input
+            type="text"
+            name="join-code"
+            required
+            maxlength="10"
+            minlength="10"
+            autocapitalize="characters"
+            autocomplete="off"
+            spellcheck="false"
+            inputmode="text"
+            placeholder="10 characters"
+            class="join-code-input">
+        </label>
+        <p class="auth-modal-hint">Ask your coach for the 10-character code.</p>
+        <p class="auth-form-error" hidden></p>
+        <div class="auth-modal-actions">
+          <button type="button" class="auth-submit auth-submit-ghost" data-auth-action="back-to-teams">Back</button>
+          <button type="submit" class="auth-submit">Join team</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <div id="toast-container" class="toast-container"></div>
