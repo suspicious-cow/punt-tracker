@@ -559,3 +559,11 @@ form.addEventListener('submit', (event) => {
 setupField({ onChange: handleFieldChange });
 setupStopwatch({ onMeasured: handleStopwatchMeasured });
 renderAll();
+
+document.addEventListener('local-data-changed', () => {
+  setEditMode(null);
+  form.reset();
+  resetLanding();
+  handleLosChange();
+  renderAll();
+});

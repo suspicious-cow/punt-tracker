@@ -47,20 +47,100 @@ async function setAuthState(user) {
   window.authState.user = user;
   window.authState.profile = null;
   document.body.classList.toggle('signed-in', !!user);
-  if (user) {
-    await ensureProfile(user);
-    window.authState.profile = await loadProfile(user.id);
-    if (!window.authState.profile) {
-      renderAccountChip();
-      applyRoleUI(null);
-      openAuthModal('profile-modal');
-      return;
-    }
-    await maybeMigrate(user.id);
-    if (window.syncQueue) window.syncQueue.flush();
+
+  if (!user) {
+    // Signed out — wipe local data and the sync queue so the next user
+    // who signs in on this device sees a clean slate.
+    if (window.localData) window.localData.clearAllLocalData();
+    if (window.syncQueue) window.syncQueue.clear();
+    notifyLocalDataChanged();
+    renderAccountChip();
+    applyRoleUI(null);
+    return;
   }
+
+  await ensureProfile(user);
+  window.authState.profile = await loadProfile(user.id);
+  if (!window.authState.profile) {
+    renderAccountChip();
+    applyRoleUI(null);
+    openAuthModal('profile-modal');
+    return;
+  }
+
+  await reconcileLocalData(user.id);
+  if (window.syncQueue) window.syncQueue.flush();
   renderAccountChip();
-  applyRoleUI(window.authState.profile ? window.authState.profile.role : null);
+  applyRoleUI(window.authState.profile.role);
+}
+
+async function reconcileLocalData(userId) {
+  const owner = window.localData ? window.localData.getDataOwner() : null;
+  if (owner === userId) {
+    // Same user as last sign-in on this device — keep local data and just
+    // run the legacy migration prompt in case there's still unpushed local data.
+    await maybeMigrate(userId);
+    return;
+  }
+  // Different user (or no owner tag yet) — local data is either foreign or
+  // belongs to a pre-ownership-tracking session. Clear it and reload from cloud.
+  if (window.localData) window.localData.clearAllLocalData();
+  if (window.syncQueue) window.syncQueue.clear();
+  try {
+    await loadCloudDataToLocal(userId);
+    if (window.localData) window.localData.setDataOwner(userId);
+  } catch (err) {
+    console.error('[auth] cloud reload failed', err);
+    if (window.showToast) {
+      window.showToast('Could not load your cloud data. Check your connection.', 'bad');
+    }
+  }
+  notifyLocalDataChanged();
+}
+
+async function loadCloudDataToLocal(userId) {
+  const [sessionsRes, kicksRes] = await Promise.all([
+    db().from('sessions')
+      .select('id, date, started_at, finished_at')
+      .eq('user_id', userId),
+    db().from('kicks')
+      .select('id, session_id, distance, hangtime, position, notes, date, hidden_from_team, kicked_at')
+      .eq('user_id', userId),
+  ]);
+  if (sessionsRes.error) throw sessionsRes.error;
+  if (kicksRes.error) throw kicksRes.error;
+
+  const sessions = (sessionsRes.data || []).map((s) => ({
+    id: s.id,
+    date: s.date,
+    startedAt: s.started_at,
+    finishedAt: s.finished_at,
+  }));
+
+  const kicks = (kicksRes.data || []).map((k) => {
+    const position = k.position || null;
+    return {
+      id: k.id,
+      sessionId: k.session_id,
+      distance: k.distance,
+      hangtime: Number(k.hangtime),
+      position,
+      result: position && position.result ? position.result : undefined,
+      notes: k.notes || '',
+      date: k.date || '',
+      hiddenFromTeam: k.hidden_from_team === true,
+      timestamp: k.kicked_at,
+    };
+  });
+
+  if (window.localData) {
+    window.localData.writeSessions(sessions);
+    window.localData.writeKicks(kicks);
+  }
+}
+
+function notifyLocalDataChanged() {
+  document.dispatchEvent(new CustomEvent('local-data-changed'));
 }
 
 function applyRoleUI(role) {
@@ -277,6 +357,7 @@ async function performMigration() {
       const { error } = await db().from('kicks').upsert(rows, { onConflict: 'id' });
       if (error) throw error;
     }
+    if (window.localData) window.localData.setDataOwner(user.id);
     closeAuthModal();
     showToast(`Uploaded ${kicks.length} kicks and ${sessions.length} sessions.`, 'good');
   } catch (err) {

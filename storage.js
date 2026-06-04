@@ -2,6 +2,7 @@ const STORAGE_KEY = 'punt-tracker-kicks-v1';
 const SESSIONS_KEY = 'punt-tracker-sessions-v1';
 const LEGACY_KICKS_KEY = 'riley-punt-tracker-kicks-v1';
 const LEGACY_SESSIONS_KEY = 'riley-punt-tracker-sessions-v1';
+const DATA_OWNER_KEY = 'punt-tracker-data-owner-v1';
 
 function safeParse(key) {
   const raw = localStorage.getItem(key);
@@ -158,6 +159,30 @@ function cleanupEmptyFinishedSessions() {
     writeSessions(cleaned);
   }
 }
+
+function getDataOwner() {
+  return localStorage.getItem(DATA_OWNER_KEY);
+}
+
+function setDataOwner(userId) {
+  if (userId) localStorage.setItem(DATA_OWNER_KEY, userId);
+}
+
+function clearAllLocalData() {
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(SESSIONS_KEY);
+  localStorage.removeItem(DATA_OWNER_KEY);
+  localStorage.removeItem(LEGACY_KICKS_KEY);
+  localStorage.removeItem(LEGACY_SESSIONS_KEY);
+}
+
+window.localData = {
+  getDataOwner,
+  setDataOwner,
+  clearAllLocalData,
+  writeKicks,
+  writeSessions,
+};
 
 migrateLegacyKeys();
 migrateIfNeeded();

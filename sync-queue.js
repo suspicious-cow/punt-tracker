@@ -142,7 +142,12 @@
     };
   }
 
-  window.syncQueue = { enqueue, flush, count, onChange };
+  function clear() {
+    write([]);
+    notify();
+  }
+
+  window.syncQueue = { enqueue, flush, count, onChange, clear };
 
   window.addEventListener('online', flush);
   document.addEventListener('DOMContentLoaded', () => {
