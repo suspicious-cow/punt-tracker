@@ -76,21 +76,35 @@ async function setAuthState(user) {
 
 async function reconcileLocalData(userId) {
   const owner = window.localData ? window.localData.getDataOwner() : null;
+
   if (owner === userId) {
-    // Same user as last sign-in on this device — keep local data and just
-    // run the legacy migration prompt in case there's still unpushed local data.
+    // Same user as last sign-in on this device — keep local data.
     await maybeMigrate(userId);
     return;
   }
-  // Different user (or no owner tag yet) — local data is either foreign or
-  // belongs to a pre-ownership-tracking session. Clear it and reload from cloud.
-  if (window.localData) window.localData.clearAllLocalData();
-  if (window.syncQueue) window.syncQueue.clear();
+
+  if (!owner) {
+    // No owner tag — could be legacy data from before owner tracking
+    // existed, or a fresh device for this user. DO NOT clear it; it could
+    // be local-only data not yet in the cloud. Run the legacy migration
+    // prompt as before, then tag the owner so future sign-ins are clean.
+    await maybeMigrate(userId);
+    if (window.localData) window.localData.setDataOwner(userId);
+    return;
+  }
+
+  // Owner tag is set to a different user — local data definitively belongs
+  // to someone else. Load this user's cloud data first; on success, the
+  // writes inside loadCloudDataToLocal have already overwritten localStorage.
+  // On failure, still wipe (don't leave foreign data accessible).
   try {
     await loadCloudDataToLocal(userId);
+    if (window.syncQueue) window.syncQueue.clear();
     if (window.localData) window.localData.setDataOwner(userId);
   } catch (err) {
     console.error('[auth] cloud reload failed', err);
+    if (window.localData) window.localData.clearAllLocalData();
+    if (window.syncQueue) window.syncQueue.clear();
     if (window.showToast) {
       window.showToast('Could not load your cloud data. Check your connection.', 'bad');
     }
