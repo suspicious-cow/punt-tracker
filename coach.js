@@ -186,15 +186,32 @@
             <h2>${escapeHtml(team.name)}</h2>
             <p class="coach-team-meta">${count} player${count === 1 ? '' : 's'}</p>
           </div>
-          <div class="coach-team-code">
-            <span class="coach-team-code-label">Join code</span>
-            <span class="coach-team-code-text">${escapeHtml(team.join_code)}</span>
-            <button type="button" class="join-code-copy join-code-copy-small" data-coach-action="copy-code" data-code="${escapeHtml(team.join_code)}">Copy</button>
+          <div class="coach-team-actions">
+            <div class="coach-team-code">
+              <span class="coach-team-code-label">Join code</span>
+              <span class="coach-team-code-text">${escapeHtml(team.join_code)}</span>
+              <button type="button" class="join-code-copy join-code-copy-small" data-coach-action="copy-code" data-code="${escapeHtml(team.join_code)}">Copy</button>
+            </div>
+            <button type="button" class="coach-team-delete" data-coach-action="delete-team" data-team-id="${escapeHtml(team.id)}" data-team-name="${escapeHtml(team.name)}">Delete team</button>
           </div>
         </header>
         ${playerArea}
       </section>
     `;
+  }
+
+  async function deleteTeam(teamId, teamName) {
+    const msg = `Delete team "${teamName}"?\n\nThis removes the team and every player's membership. Players keep all their logged kicks — only their access to this team is revoked.`;
+    if (!window.confirm(msg)) return;
+    try {
+      const { error } = await db().from('teams').delete().eq('id', teamId);
+      if (error) throw error;
+      if (window.showToast) window.showToast(`Deleted ${teamName}.`, 'good');
+      await refresh();
+    } catch (err) {
+      console.error('[coach] delete failed', err);
+      if (window.showToast) window.showToast(`Couldn't delete: ${err.message || err}`, 'bad');
+    }
   }
 
   function renderDashboard(data) {
@@ -278,6 +295,14 @@
           if (window.showToast) window.showToast(`Copied ${code}`, 'good');
         } catch (err) {
           if (window.showToast) window.showToast(`Code: ${code}`, 'info');
+        }
+      }
+      if (action === 'delete-team') {
+        const teamId = trigger.dataset.teamId;
+        const teamName = trigger.dataset.teamName || 'this team';
+        if (teamId) {
+          trigger.disabled = true;
+          try { await deleteTeam(teamId, teamName); } finally { trigger.disabled = false; }
         }
       }
       if (action === 'refresh') {
