@@ -15,6 +15,20 @@
   <link rel="stylesheet" href="tracker.css">
 </head>
 <body>
+  <section id="login-page" class="login-page" aria-labelledby="login-title">
+    <div class="login-card">
+      <img src="icon.svg" alt="" class="login-icon" width="72" height="72">
+      <p class="eyebrow login-eyebrow">PUNT TRACKER</p>
+      <h1 id="login-title" class="login-title">Log every punt. Watch the numbers move.</h1>
+      <p class="login-tagline">A free tracker for high school punters and their coaches. Log your kicks, see your team's stats live, share a join code &mdash; no spreadsheets required.</p>
+      <div class="login-actions">
+        <button type="button" class="login-btn login-btn-primary" data-auth-action="open-signin">Sign in</button>
+        <button type="button" class="login-btn" data-auth-action="open-signup">Create account</button>
+      </div>
+      <p class="login-fineprint">Your data syncs across devices and works offline once you&rsquo;re signed in.</p>
+    </div>
+  </section>
+
   <div id="account-chip" class="account-chip"></div>
 
   <nav class="player-tab-bar player-only" aria-label="View">

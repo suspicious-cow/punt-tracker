@@ -46,6 +46,7 @@ async function initAuth() {
 async function setAuthState(user) {
   window.authState.user = user;
   window.authState.profile = null;
+  document.body.classList.toggle('signed-in', !!user);
   if (user) {
     await ensureProfile(user);
     window.authState.profile = await loadProfile(user.id);
