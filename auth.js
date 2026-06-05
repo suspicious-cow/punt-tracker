@@ -43,7 +43,10 @@ async function initAuth() {
   });
 }
 
+let setAuthGeneration = 0;
+
 async function setAuthState(user) {
+  const gen = ++setAuthGeneration;
   window.authState.user = user;
   window.authState.profile = null;
   document.body.classList.toggle('signed-in', !!user);
@@ -60,7 +63,11 @@ async function setAuthState(user) {
   }
 
   await ensureProfile(user);
+  if (gen !== setAuthGeneration) return;
+
   window.authState.profile = await loadProfile(user.id);
+  if (gen !== setAuthGeneration) return;
+
   if (!window.authState.profile) {
     renderAccountChip();
     applyRoleUI(null);
@@ -69,9 +76,13 @@ async function setAuthState(user) {
   }
 
   await reconcileLocalData(user.id);
+  if (gen !== setAuthGeneration) return;
+
   if (window.syncQueue) window.syncQueue.flush();
   renderAccountChip();
-  applyRoleUI(window.authState.profile.role);
+  if (window.authState.profile) {
+    applyRoleUI(window.authState.profile.role);
+  }
 }
 
 async function reconcileLocalData(userId) {

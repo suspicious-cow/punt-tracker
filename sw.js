@@ -1,4 +1,4 @@
-const CACHE_NAME = 'punt-tracker-v19';
+const CACHE_NAME = 'punt-tracker-v20';
 const APP_SHELL = [
   './',
   './index.html',
