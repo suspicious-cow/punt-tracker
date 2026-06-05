@@ -2471,6 +2471,12 @@ body.position-kicker .punter-only { display: none !important; }
 .kicker-row-inside20 { background: var(--good); }
 .kicker-row-kickoff { background: var(--ink-soft); color: #fff; }
 
+.kicker-session-kicks {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+}
+
 .kicker-row-notes {
   font-size: 0.85rem;
   color: var(--ink-soft);

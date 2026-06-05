@@ -9,6 +9,7 @@
   let active = false;
   let editingKickId = null;
   let selectedOutcome = null;
+  let expandedSessionId = null;
 
   const els = () => ({
     form: document.getElementById('kicker-kick-form'),
@@ -39,6 +40,8 @@
     livePatPct: document.getElementById('kicker-live-pat-pct'),
     liveLong: document.getElementById('kicker-live-long'),
     lastPreview: document.getElementById('kicker-last-session-preview'),
+    sessionList: document.getElementById('kicker-session-list'),
+    sessionsEmpty: document.getElementById('kicker-sessions-empty'),
   });
 
   const kickoffStopwatch = (function () {
@@ -136,6 +139,44 @@
     if (!isoDate) return '';
     const [y, m, d] = isoDate.split('-');
     return `${Number(m)}/${Number(d)}/${y.slice(2)}`;
+  }
+
+  function formatTime(isoTimestamp) {
+    if (!isoTimestamp) return '';
+    const d = new Date(isoTimestamp);
+    let h = d.getHours();
+    const min = String(d.getMinutes()).padStart(2, '0');
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    if (h === 0) h = 12;
+    return `${h}:${min} ${ampm}`;
+  }
+
+  function kickerSessionSummary(sessionKicks) {
+    const fgs = sessionKicks.filter((k) => k.kickType === 'fg');
+    const pats = sessionKicks.filter((k) => k.kickType === 'pat');
+    const kickoffs = sessionKicks.filter((k) => k.kickType === 'kickoff');
+    const fgMade = fgs.filter((k) => k.outcome === 'made').length;
+    const patMade = pats.filter((k) => k.outcome === 'made').length;
+    const koAvgDist = kickoffs.length
+      ? kickoffs.reduce((s, k) => s + k.distance, 0) / kickoffs.length
+      : 0;
+    const koAvgHang = kickoffs.length
+      ? kickoffs.reduce((s, k) => s + (k.hangtime || 0), 0) / kickoffs.length
+      : 0;
+    return {
+      total: sessionKicks.length,
+      fgCount: fgs.length,
+      fgMade,
+      fgPct: fgs.length ? Math.round((fgMade / fgs.length) * 100) : 0,
+      fgAvgDist: fgs.length ? fgs.reduce((s, k) => s + k.distance, 0) / fgs.length : 0,
+      patCount: pats.length,
+      patMade,
+      patPct: pats.length ? Math.round((patMade / pats.length) * 100) : 0,
+      koCount: kickoffs.length,
+      koAvgDist,
+      koAvgHang,
+    };
   }
 
   function todayKey() {
@@ -355,11 +396,33 @@
       if (editingKickId === kickId) resetForm();
       deleteKick(kickId);
       render();
-      return;
+      return true;
     }
     const edit = event.target.closest('.kicker-kick-edit');
     if (edit) {
       startEdit(edit.dataset.kickId);
+      return true;
+    }
+    return false;
+  }
+
+  function handleSessionListClick(event) {
+    if (handleKickListClick(event)) return;
+    const toggle = event.target.closest('.session-row-toggle');
+    if (toggle) {
+      const id = toggle.dataset.sessionId;
+      expandedSessionId = expandedSessionId === id ? null : id;
+      renderPastSessions();
+      return;
+    }
+    const del = event.target.closest('.session-delete-btn');
+    if (del) {
+      const id = del.dataset.sessionId;
+      if (confirm('Delete this session and all its kicks?')) {
+        deleteSession(id);
+        if (expandedSessionId === id) expandedSessionId = null;
+        render();
+      }
     }
   }
 
@@ -420,6 +483,83 @@
       if (kick.id === editingKickId) li.classList.add('editing');
       li.innerHTML = kickRowHtml(kick);
       kickList.appendChild(li);
+    });
+  }
+
+  function renderPastSessions() {
+    const { sessionList, sessionsEmpty } = els();
+    const sessions = getAllSessions().filter((s) => s.finishedAt !== null);
+    const allKicks = getAllKicks();
+
+    sessionList.innerHTML = '';
+
+    const rows = sessions
+      .map((s) => {
+        const sk = allKicks.filter((k) => k.sessionId === s.id);
+        return { session: s, kicks: sk, summary: kickerSessionSummary(sk) };
+      })
+      .filter((row) => row.summary.total > 0)
+      .sort((a, b) => (b.session.finishedAt || '').localeCompare(a.session.finishedAt || ''));
+
+    if (rows.length === 0) {
+      sessionsEmpty.hidden = false;
+      return;
+    }
+    sessionsEmpty.hidden = true;
+
+    rows.forEach(({ session, kicks, summary }) => {
+      const li = document.createElement('li');
+      li.className = 'session-row';
+      const expanded = session.id === expandedSessionId;
+      if (expanded) li.classList.add('expanded');
+
+      const statParts = [];
+      if (summary.fgCount > 0) {
+        statParts.push(`<span class="srs-pri">${summary.fgMade}/${summary.fgCount} FG</span>`);
+        statParts.push(`<span>${summary.fgPct}<span class="unit">%</span></span>`);
+      }
+      if (summary.patCount > 0) {
+        statParts.push(`<span class="srs-pri">${summary.patMade}/${summary.patCount} PAT</span>`);
+        statParts.push(`<span>${summary.patPct}<span class="unit">%</span></span>`);
+      }
+      if (summary.koCount > 0) {
+        statParts.push(`<span class="srs-pri">${summary.koCount} KO</span>`);
+        statParts.push(`<span>${summary.koAvgDist.toFixed(1)}<span class="unit">yd avg</span></span>`);
+        if (summary.koAvgHang > 0) {
+          statParts.push(`<span>${summary.koAvgHang.toFixed(2)}<span class="unit">s hang</span></span>`);
+        }
+      }
+      const statsHtml = statParts.join('<span class="srs-sep">·</span>');
+
+      li.innerHTML = `
+        <button type="button" class="session-row-toggle" data-session-id="${session.id}" aria-expanded="${expanded}">
+          <div class="session-row-header">
+            <div class="session-row-date">${formatDate(session.date)} <span class="session-row-time">${formatTime(session.startedAt)}</span></div>
+            <div class="session-row-stats">${statsHtml}</div>
+          </div>
+          <span class="session-row-chevron">${expanded ? '▴' : '▾'}</span>
+        </button>
+      `;
+
+      if (expanded) {
+        const nested = document.createElement('ul');
+        nested.className = 'kicker-kick-list kicker-session-kicks';
+        kicks.slice().reverse().forEach((kick) => {
+          const kickLi = document.createElement('li');
+          kickLi.className = 'kicker-kick-row';
+          if (kick.id === editingKickId) kickLi.classList.add('editing');
+          kickLi.innerHTML = kickRowHtml(kick);
+          nested.appendChild(kickLi);
+        });
+        li.appendChild(nested);
+
+        const footer = document.createElement('div');
+        footer.className = 'session-row-footer';
+        footer.innerHTML = `<button type="button" class="session-delete-btn" data-session-id="${session.id}">Delete Session</button>`;
+        li.appendChild(footer);
+      }
+
+      sessionList.appendChild(li);
     });
   }
 
@@ -517,15 +657,18 @@
     renderStats();
     renderLiveSession();
     renderLastPreview();
+    renderPastSessions();
+    if (window.kickerCharts) window.kickerCharts.renderAll();
   }
 
   function activate() {
     if (active) return;
     active = true;
-    const { form, cancelEditBtn, kickList, outcomeButtons, typeRadios } = els();
+    const { form, cancelEditBtn, kickList, outcomeButtons, typeRadios, sessionList } = els();
     form.addEventListener('submit', handleSubmit);
     cancelEditBtn.addEventListener('click', () => { resetForm(); render(); });
     kickList.addEventListener('click', handleKickListClick);
+    if (sessionList) sessionList.addEventListener('click', handleSessionListClick);
     outcomeButtons.forEach((b) => {
       b.addEventListener('click', () => setOutcome(b.dataset.outcome));
     });

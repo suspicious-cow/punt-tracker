@@ -417,6 +417,36 @@
         <p id="kicker-empty-state" class="empty-state">No field goals yet — log one above.</p>
       </section>
 
+      <section class="card kicker-only" id="kicker-fg-distance-chart-card">
+        <h2>FG Distance Trend</h2>
+        <div class="chart-container">
+          <canvas id="kicker-fg-distance-chart"></canvas>
+          <p id="kicker-fg-distance-chart-empty" class="empty-state chart-empty">Finish a session with field goals to start tracking.</p>
+        </div>
+      </section>
+
+      <section class="card kicker-only" id="kicker-fg-pct-chart-card">
+        <h2>FG Make %</h2>
+        <div class="chart-container">
+          <canvas id="kicker-fg-pct-chart"></canvas>
+          <p id="kicker-fg-pct-chart-empty" class="empty-state chart-empty">Finish a session with field goals to start tracking.</p>
+        </div>
+      </section>
+
+      <section class="card kicker-only" id="kicker-kickoff-hangtime-chart-card">
+        <h2>Kickoff Hangtime Trend</h2>
+        <div class="chart-container">
+          <canvas id="kicker-kickoff-hangtime-chart"></canvas>
+          <p id="kicker-kickoff-hangtime-chart-empty" class="empty-state chart-empty">Finish a session with kickoffs to start tracking.</p>
+        </div>
+      </section>
+
+      <section class="card kicker-only" id="kicker-past-sessions-card">
+        <h2>Past Sessions</h2>
+        <ul id="kicker-session-list" class="session-list"></ul>
+        <p id="kicker-sessions-empty" class="empty-state">No past sessions yet. Finish one to see it here.</p>
+      </section>
+
       <section class="card punter-only" id="form-card">
         <form id="kick-form" autocomplete="off">
           <div class="field">
@@ -871,6 +901,7 @@
   <script src="conditions-analysis.js"></script>
   <script src="kicker-field.js"></script>
   <script src="kickoff-field.js"></script>
+  <script src="kicker-charts.js"></script>
   <script src="kicker.js"></script>
   <script src="tracker.js"></script>
   <script>
