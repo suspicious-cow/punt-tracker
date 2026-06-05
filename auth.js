@@ -84,10 +84,26 @@ async function reconcileLocalData(userId) {
   }
 
   if (!owner) {
-    // No owner tag — could be legacy data from before owner tracking
-    // existed, or a fresh device for this user. DO NOT clear it; it could
-    // be local-only data not yet in the cloud. Run the legacy migration
-    // prompt as before, then tag the owner so future sign-ins are clean.
+    // No owner tag. Two distinct sub-cases:
+    //   a) local is empty — fresh device OR signed-out-then-back-in
+    //      (sign-out clears local + owner). Pull cloud to restore the
+    //      user's history, otherwise their data appears "lost."
+    //   b) local has data — legacy pre-owner-tracking data OR local-only
+    //      data not yet in cloud. Don't clear; run migration prompt.
+    const hasLocalData = getAllKicks().length > 0 || getAllSessions().length > 0;
+    if (!hasLocalData) {
+      try {
+        await loadCloudDataToLocal(userId);
+      } catch (err) {
+        console.error('[auth] cloud reload failed (no-owner path)', err);
+        if (window.showToast) {
+          window.showToast('Could not load your cloud data. Check your connection.', 'bad');
+        }
+      }
+      if (window.localData) window.localData.setDataOwner(userId);
+      notifyLocalDataChanged();
+      return;
+    }
     await maybeMigrate(userId);
     if (window.localData) window.localData.setDataOwner(userId);
     return;
