@@ -15,6 +15,7 @@ create table if not exists public.user_profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   name text not null,
   role text not null check (role in ('coach', 'player')),
+  position text not null default 'punter' check (position in ('punter','kicker')),
   created_at timestamptz not null default now()
 );
 
@@ -68,6 +69,8 @@ create table if not exists public.kicks (
   notes text,
   date text,
   hidden_from_team boolean not null default false,
+  kick_type text not null default 'punt' check (kick_type in ('punt','fg','pat','kickoff')),
+  outcome text check (outcome in ('made','missed')),
   kicked_at timestamptz not null default now(),
   created_at timestamptz not null default now()
 );

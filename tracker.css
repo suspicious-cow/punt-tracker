@@ -2369,3 +2369,138 @@ body.role-player .player-tab-bar {
   color: var(--ink-soft);
   font-style: italic;
 }
+
+/* ---------- Kicker mode (Phase 9a) ---------- */
+
+body:not(.position-kicker) .kicker-only { display: none !important; }
+body.position-kicker .punter-only { display: none !important; }
+
+.kicker-outcome-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.kicker-outcome-btn {
+  flex: 1;
+  padding: 14px;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 2px solid rgba(0, 0, 0, 0.15);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.kicker-outcome-btn:hover {
+  border-color: var(--gold-dim);
+}
+
+.kicker-outcome-btn[data-outcome="made"].selected {
+  background: var(--good);
+  color: #fff;
+  border-color: var(--good);
+}
+
+.kicker-outcome-btn[data-outcome="missed"].selected {
+  background: var(--bad);
+  color: #fff;
+  border-color: var(--bad);
+}
+
+.kicker-kick-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kicker-kick-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+}
+
+.kicker-kick-row.editing {
+  border-color: var(--gold);
+  background: rgba(200, 161, 60, 0.12);
+}
+
+.kicker-row-distance {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.kicker-row-distance .unit {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  margin-left: 2px;
+}
+
+.kicker-row-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kicker-row-outcome {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  align-self: flex-start;
+  color: #fff;
+}
+
+.kicker-row-made { background: var(--good); }
+.kicker-row-missed { background: var(--bad); }
+
+.kicker-row-notes {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.kicker-row-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.kicker-kick-edit, .kicker-kick-delete {
+  background: transparent;
+  border: none;
+  width: 32px;
+  height: 32px;
+  font-size: 1rem;
+  color: var(--ink-soft);
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.kicker-kick-edit:hover, .kicker-kick-delete:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--ink);
+}
+
+.stat-divider {
+  color: var(--ink-soft);
+  font-weight: 400;
+  margin: 0 4px;
+}
+
+/* Position fieldset in signup/profile modal */
+.position-fieldset[hidden] {
+  display: none !important;
+}

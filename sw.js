@@ -1,4 +1,4 @@
-const CACHE_NAME = 'punt-tracker-v20';
+const CACHE_NAME = 'punt-tracker-v21';
 const APP_SHELL = [
   './',
   './index.html',
@@ -15,6 +15,7 @@ const APP_SHELL = [
   './coach.js',
   './team-view.js',
   './conditions-analysis.js',
+  './kicker.js',
   './icon.svg',
   './manifest.json',
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',

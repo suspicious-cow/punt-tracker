@@ -81,7 +81,7 @@ async function setAuthState(user) {
   if (window.syncQueue) window.syncQueue.flush();
   renderAccountChip();
   if (window.authState.profile) {
-    applyRoleUI(window.authState.profile.role);
+    applyRoleUI(window.authState.profile.role, window.authState.profile.position);
   }
 }
 
@@ -147,7 +147,7 @@ async function loadCloudDataToLocal(userId, options) {
       .select('id, date, started_at, finished_at, wind_mph, wind_direction, weather, surface')
       .eq('user_id', userId),
     db().from('kicks')
-      .select('id, session_id, distance, hangtime, position, notes, date, hidden_from_team, kicked_at')
+      .select('id, session_id, distance, hangtime, position, notes, date, hidden_from_team, kick_type, outcome, kicked_at')
       .eq('user_id', userId),
   ]);
   if (sessionsRes.error) throw sessionsRes.error;
@@ -176,6 +176,8 @@ async function loadCloudDataToLocal(userId, options) {
       notes: k.notes || '',
       date: k.date || '',
       hiddenFromTeam: k.hidden_from_team === true,
+      kickType: k.kick_type || 'punt',
+      outcome: k.outcome || null,
       timestamp: k.kicked_at,
     };
   });
@@ -197,7 +199,7 @@ function notifyLocalDataChanged() {
   document.dispatchEvent(new CustomEvent('local-data-changed'));
 }
 
-function applyRoleUI(role) {
+function applyRoleUI(role, position) {
   if (role === 'coach') {
     if (window.coachDashboard) window.coachDashboard.activate();
     if (window.teamView) window.teamView.deactivate();
@@ -208,12 +210,18 @@ function applyRoleUI(role) {
     if (window.coachDashboard) window.coachDashboard.deactivate();
     if (window.teamView) window.teamView.deactivate();
   }
+  document.body.classList.toggle('position-kicker', position === 'kicker');
+  document.body.classList.toggle('position-punter', position === 'punter' || (role === 'player' && !position));
+  if (window.kickerApp) {
+    if (position === 'kicker') window.kickerApp.activate();
+    else window.kickerApp.deactivate();
+  }
 }
 
 async function loadProfile(userId) {
   const { data, error } = await db()
     .from('user_profiles')
-    .select('id, name, role')
+    .select('id, name, role, position')
     .eq('id', userId)
     .maybeSingle();
   if (error) {
@@ -231,23 +239,25 @@ async function ensureProfile(user) {
     console.warn('[auth] no profile and no user_metadata to derive one');
     return null;
   }
+  const position = meta.role === 'player' ? (meta.position || 'punter') : 'punter';
   const { error } = await db().from('user_profiles').insert({
     id: user.id,
     name: meta.name,
     role: meta.role,
+    position,
   });
   if (error) {
     console.error('[auth] profile create failed', error);
     return null;
   }
-  return { id: user.id, name: meta.name, role: meta.role };
+  return { id: user.id, name: meta.name, role: meta.role, position };
 }
 
-async function signUp({ email, password, name, role }) {
+async function signUp({ email, password, name, role, position }) {
   const { data, error } = await db().auth.signUp({
     email,
     password,
-    options: { data: { name, role } },
+    options: { data: { name, role, position } },
   });
   if (error) throw error;
   if (data.session) {
@@ -277,15 +287,16 @@ async function setNewPassword({ password }) {
   if (error) throw error;
 }
 
-async function completeProfile({ name, role }) {
+async function completeProfile({ name, role, position }) {
   const user = window.authState.user;
   if (!user) throw new Error('not signed in');
+  const pos = role === 'player' ? (position || 'punter') : 'punter';
   const { error } = await db().from('user_profiles').upsert(
-    { id: user.id, name, role },
+    { id: user.id, name, role, position: pos },
     { onConflict: 'id' }
   );
   if (error) throw error;
-  window.authState.profile = { id: user.id, name, role };
+  window.authState.profile = { id: user.id, name, role, position: pos };
   renderAccountChip();
   await maybeMigrate(user.id);
 }
@@ -370,7 +381,7 @@ async function maybeMigrate(userId) {
 }
 
 function kickToCloud(kick, userId) {
-  return {
+  const payload = {
     id: kick.id,
     user_id: userId,
     session_id: kick.sessionId || null,
@@ -382,6 +393,9 @@ function kickToCloud(kick, userId) {
     hidden_from_team: kick.hiddenFromTeam === true,
     kicked_at: kick.timestamp || new Date().toISOString(),
   };
+  if (kick.kickType) payload.kick_type = kick.kickType;
+  if (kick.outcome) payload.outcome = kick.outcome;
+  return payload;
 }
 
 function sessionToCloud(session, userId) {
@@ -749,9 +763,15 @@ function wireAuthEvents() {
     try {
       const name = e.target.elements['profile-name'].value.trim();
       const role = e.target.elements['profile-role'].value;
+      const position = e.target.elements['profile-position']
+        ? e.target.elements['profile-position'].value
+        : 'punter';
       if (!name) throw new Error('Name is required');
       if (role !== 'coach' && role !== 'player') throw new Error('Pick coach or player');
-      await completeProfile({ name, role });
+      if (role === 'player' && position !== 'punter' && position !== 'kicker') {
+        throw new Error('Pick punter or kicker');
+      }
+      await completeProfile({ name, role, position });
       closeAuthModal();
       showToast(`Welcome, ${name}.`, 'good');
     } catch (err) {
@@ -808,10 +828,16 @@ function wireAuthEvents() {
       const password = e.target.elements['signup-password'].value;
       const name = e.target.elements['signup-name'].value.trim();
       const role = e.target.elements['signup-role'].value;
+      const position = e.target.elements['signup-position']
+        ? e.target.elements['signup-position'].value
+        : 'punter';
       if (!name) throw new Error('Name is required');
       if (!role) throw new Error('Pick coach or player');
+      if (role === 'player' && position !== 'punter' && position !== 'kicker') {
+        throw new Error('Pick punter or kicker');
+      }
       if (password.length < 6) throw new Error('Password must be at least 6 characters');
-      const result = await signUp({ email, password, name, role });
+      const result = await signUp({ email, password, name, role, position });
       if (!result.session) {
         setFormError(
           'signup-form',
@@ -831,8 +857,26 @@ function wireAuthEvents() {
 
 // ---------- INIT ----------
 
+function wirePositionToggle(formId, roleName) {
+  const form = document.getElementById(formId);
+  if (!form) return;
+  const updateVisibility = () => {
+    const checked = form.querySelector(`input[name="${roleName}"]:checked`);
+    const isPlayer = checked && checked.value === 'player';
+    form.querySelectorAll('.position-fieldset').forEach((fs) => {
+      fs.hidden = !isPlayer;
+    });
+  };
+  form.querySelectorAll(`input[name="${roleName}"]`).forEach((r) => {
+    r.addEventListener('change', updateVisibility);
+  });
+  updateVisibility();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   wireAuthEvents();
+  wirePositionToggle('signup-form', 'signup-role');
+  wirePositionToggle('profile-form', 'profile-role');
   if (window.syncQueue) window.syncQueue.onChange(renderAccountChip);
   initAuth();
 });

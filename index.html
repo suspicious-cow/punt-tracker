@@ -69,7 +69,7 @@
   </section>
 
   <main class="player-only player-tab-kicks-only">
-    <aside class="stats-sidebar">
+    <aside class="stats-sidebar punter-only">
       <div class="stat-card">
         <h3>Best Punt</h3>
         <div class="stat-primary" id="best-kick-distance">&mdash;</div>
@@ -95,6 +95,26 @@
             <div class="ratio-label">Touchbacks</div>
           </div>
         </div>
+      </div>
+    </aside>
+
+    <aside class="stats-sidebar kicker-only">
+      <div class="stat-card">
+        <h3>FG %</h3>
+        <div class="stat-primary" id="kicker-fg-pct">&mdash;</div>
+        <div class="stat-secondary" id="kicker-fg-meta">no kicks yet</div>
+      </div>
+
+      <div class="stat-card">
+        <h3>Made / Attempted</h3>
+        <div class="stat-primary"><span id="kicker-made-count">0</span> <span class="stat-divider">/</span> <span id="kicker-attempted-count">0</span></div>
+        <div class="stat-secondary">field goals logged</div>
+      </div>
+
+      <div class="stat-card">
+        <h3>Career Long</h3>
+        <div class="stat-primary" id="kicker-long">&mdash;</div>
+        <div class="stat-secondary" id="kicker-long-meta">no makes yet</div>
       </div>
     </aside>
 
@@ -133,7 +153,49 @@
         </div>
       </section>
 
-      <section class="card" id="form-card">
+      <section class="card kicker-only" id="kicker-form-card">
+        <form id="kicker-kick-form" autocomplete="off">
+          <div class="field">
+            <label for="kicker-distance">Field Goal Distance <span class="unit">(yards)</span></label>
+            <input
+              type="number"
+              id="kicker-distance"
+              name="kicker-distance"
+              inputmode="numeric"
+              step="1"
+              min="0"
+              max="80"
+              placeholder="e.g. 32"
+              required
+            >
+          </div>
+          <div class="field">
+            <label>Outcome</label>
+            <div class="kicker-outcome-buttons">
+              <button type="button" class="kicker-outcome-btn" data-outcome="made">Made</button>
+              <button type="button" class="kicker-outcome-btn" data-outcome="missed">Missed</button>
+            </div>
+            <p id="kicker-outcome-error" class="form-error" hidden>Pick made or missed.</p>
+          </div>
+          <div class="field">
+            <label for="kicker-notes">Notes</label>
+            <textarea id="kicker-notes" name="kicker-notes" rows="2" maxlength="160" placeholder="optional"></textarea>
+          </div>
+          <p id="kicker-edit-mode-banner" class="edit-mode-banner" hidden>
+            Editing kick — your changes will replace what's logged.
+            <button type="button" id="kicker-cancel-edit-btn" class="link-btn">Cancel</button>
+          </p>
+          <button type="submit" id="kicker-save-btn" class="primary-btn">Save Kick</button>
+        </form>
+      </section>
+
+      <section class="card kicker-only" id="kicker-active-kicks-card">
+        <h2>This Session</h2>
+        <ul id="kicker-kick-list" class="kicker-kick-list"></ul>
+        <p id="kicker-empty-state" class="empty-state">No field goals yet — log one above.</p>
+      </section>
+
+      <section class="card punter-only" id="form-card">
         <form id="kick-form" autocomplete="off">
           <div class="field">
             <label for="hangtime">Hangtime <span class="unit">(seconds)</span></label>
@@ -280,14 +342,14 @@
         </form>
       </section>
 
-      <section class="card" id="active-kicks-card">
+      <section class="card punter-only" id="active-kicks-card">
         <h2>This Session</h2>
         <ul id="kick-list" class="kick-list">
         </ul>
         <p id="empty-state" class="empty-state">No kicks yet &mdash; drag the football to log your first.</p>
       </section>
 
-      <section class="card" id="chart-card">
+      <section class="card punter-only" id="chart-card">
         <h2>Distance Trend</h2>
         <div class="chart-container">
           <canvas id="distance-chart"></canvas>
@@ -295,7 +357,7 @@
         </div>
       </section>
 
-      <section class="card" id="hangtime-chart-card">
+      <section class="card punter-only" id="hangtime-chart-card">
         <h2>Hangtime Trend</h2>
         <div class="chart-container">
           <canvas id="hangtime-chart"></canvas>
@@ -303,7 +365,7 @@
         </div>
       </section>
 
-      <section class="card" id="conditions-analysis-card" hidden>
+      <section class="card punter-only" id="conditions-analysis-card" hidden>
         <h2>Conditions Analysis</h2>
         <p class="card-subtitle">Avg distance &amp; hangtime for kicks logged in each condition. Highlighted bucket is your best by distance.</p>
         <div class="conditions-analysis-grid">
@@ -326,7 +388,7 @@
         </div>
       </section>
 
-      <section class="card" id="past-sessions-card">
+      <section class="card punter-only" id="past-sessions-card">
         <h2>Past Sessions</h2>
         <ul id="session-list" class="session-list">
         </ul>
@@ -429,6 +491,17 @@
             <span>Coach</span>
           </label>
         </fieldset>
+        <fieldset class="role-fieldset position-fieldset" data-show-when-role="player">
+          <legend>Your position</legend>
+          <label class="role-option">
+            <input type="radio" name="signup-position" value="punter" checked>
+            <span>Punter</span>
+          </label>
+          <label class="role-option">
+            <input type="radio" name="signup-position" value="kicker">
+            <span>Kicker</span>
+          </label>
+        </fieldset>
         <label>
           <span>Email</span>
           <input type="email" name="signup-email" required autocomplete="email">
@@ -473,6 +546,17 @@
           <label class="role-option">
             <input type="radio" name="profile-role" value="coach">
             <span>Coach</span>
+          </label>
+        </fieldset>
+        <fieldset class="role-fieldset position-fieldset" data-show-when-role="player">
+          <legend>Your position</legend>
+          <label class="role-option">
+            <input type="radio" name="profile-position" value="punter" checked>
+            <span>Punter</span>
+          </label>
+          <label class="role-option">
+            <input type="radio" name="profile-position" value="kicker">
+            <span>Kicker</span>
           </label>
         </fieldset>
         <p class="auth-form-error" hidden></p>
@@ -563,6 +647,7 @@
   <script src="stopwatch.js"></script>
   <script src="charts.js"></script>
   <script src="conditions-analysis.js"></script>
+  <script src="kicker.js"></script>
   <script src="tracker.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
