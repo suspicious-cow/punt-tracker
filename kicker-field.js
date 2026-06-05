@@ -31,8 +31,6 @@
   let trajectory = null;
   let prompt = null;
   let hashGroup = null;
-  let distanceInput = null;
-  let userDistanceOverride = false;
   let setupDone = false;
 
   function generateHashMarks() {
@@ -105,9 +103,6 @@
     const sideLabel = state.side === 'own' ? 'Own' : 'Opp';
     const hashLabel = state.hash === 'left' ? 'L hash' : state.hash === 'right' ? 'R hash' : 'Middle';
     prompt.innerHTML = `LOS at ${sideLabel} ${state.yard} &middot; ${hashLabel} &middot; ${dist} yd FG`;
-    if (!userDistanceOverride && distanceInput) {
-      distanceInput.value = dist;
-    }
   }
 
   function handleChange() {
@@ -126,7 +121,6 @@
     trajectory = document.getElementById('kicker-trajectory');
     prompt = document.getElementById('kicker-field-prompt');
     hashGroup = document.getElementById('kicker-hash-marks');
-    distanceInput = document.getElementById('kicker-distance');
 
     hashRadios = document.querySelectorAll('input[name="kicker-hash"]');
 
@@ -150,20 +144,11 @@
       });
     }
 
-    if (distanceInput) {
-      distanceInput.addEventListener('input', (e) => {
-        // Only mark as user override if the change came from the user,
-        // not from our auto-fill.
-        if (e.isTrusted) userDistanceOverride = true;
-      });
-    }
-
     handleChange();
     setupDone = true;
   }
 
   function reset() {
-    userDistanceOverride = false;
     if (!losInput) return;
     losInput.value = 17;
     const oppRadio = document.getElementById('kicker-los-side-opp');
@@ -181,5 +166,9 @@
     return state.hash;
   }
 
-  window.kickerField = { setup, reset, getLos, getHash };
+  function getDistance() {
+    return fgDistance(state.side, state.yard);
+  }
+
+  window.kickerField = { setup, reset, getLos, getHash, getDistance };
 })();

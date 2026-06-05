@@ -12,7 +12,6 @@
 
   const els = () => ({
     form: document.getElementById('kicker-kick-form'),
-    distance: document.getElementById('kicker-distance'),
     notes: document.getElementById('kicker-notes'),
     outcomeButtons: document.querySelectorAll('.kicker-outcome-btn'),
     outcomeError: document.getElementById('kicker-outcome-error'),
@@ -70,7 +69,7 @@
   }
 
   function resetForm() {
-    const { form, distance, notes, editBanner, saveBtn } = els();
+    const { form, editBanner, saveBtn } = els();
     form.reset();
     editingKickId = null;
     selectedOutcome = null;
@@ -78,15 +77,13 @@
     editBanner.hidden = true;
     saveBtn.textContent = 'Save Kick';
     if (window.kickerField) window.kickerField.reset();
-    distance.focus();
   }
 
   function startEdit(kickId) {
     const kick = getAllKicks().find((k) => k.id === kickId);
     if (!kick || kick.kickType !== 'fg') return;
     editingKickId = kickId;
-    const { distance, notes, editBanner, saveBtn } = els();
-    distance.value = kick.distance;
+    const { notes, editBanner, saveBtn } = els();
     notes.value = kick.notes || '';
     setOutcome(kick.outcome || null);
     if (kick.position && kick.position.los) {
@@ -105,15 +102,16 @@
     editBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
-  function makeKick(distance, outcome, notesText, sessionId) {
+  function makeKick(outcome, notesText, sessionId) {
     const los = window.kickerField ? window.kickerField.getLos() : null;
     const hash = window.kickerField ? window.kickerField.getHash() : null;
+    const distance = window.kickerField ? window.kickerField.getDistance() : 0;
     return {
       id: `kick-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       sessionId,
       date: todayKey(),
       timestamp: new Date().toISOString(),
-      distance: Number(distance),
+      distance,
       hangtime: 0,
       kickType: 'fg',
       outcome,
@@ -125,7 +123,7 @@
 
   function handleSubmit(event) {
     event.preventDefault();
-    const { distance, notes, outcomeError } = els();
+    const { notes, outcomeError } = els();
     if (!selectedOutcome) {
       outcomeError.hidden = false;
       return;
@@ -135,9 +133,10 @@
       if (existing) {
         const los = window.kickerField ? window.kickerField.getLos() : null;
         const hash = window.kickerField ? window.kickerField.getHash() : null;
+        const distance = window.kickerField ? window.kickerField.getDistance() : existing.distance;
         updateKick({
           ...existing,
-          distance: Number(distance.value),
+          distance,
           outcome: selectedOutcome,
           notes: notes.value.trim(),
           position: los ? { los: { side: los.side, yard: los.yard }, hash } : existing.position,
@@ -146,7 +145,7 @@
     } else {
       const session = getActiveSession();
       if (!session) return;
-      saveKick(makeKick(distance.value, selectedOutcome, notes.value, session.id));
+      saveKick(makeKick(selectedOutcome, notes.value, session.id));
     }
     resetForm();
     render();
