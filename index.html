@@ -36,10 +36,16 @@
     <button type="button" class="player-tab" data-team-action="tab-team">My Team</button>
   </nav>
 
-  <header class="app-header player-only player-tab-kicks-only">
+  <header class="app-header player-only player-tab-kicks-only punter-only">
     <p class="eyebrow">PUNT TRACKER</p>
-    <h1>Log a Kick</h1>
+    <h1>Log a Punt</h1>
     <p class="subtitle">Every kick. Every session. The numbers don't lie.</p>
+  </header>
+
+  <header class="app-header player-only player-tab-kicks-only kicker-only">
+    <p class="eyebrow">PUNT TRACKER &middot; KICKER MODE</p>
+    <h1>Log a Field Goal</h1>
+    <p class="subtitle">Every attempt. Every make. Track the percentage.</p>
   </header>
 
   <header class="app-header player-only player-tab-team-only">
@@ -121,16 +127,18 @@
     <div class="primary-column">
       <section class="card session-control-card" id="session-control-card">
         <div id="session-inactive" class="session-state">
-          <div class="session-prompt">Ready to punt? Hit Start to log this practice.</div>
+          <div class="session-prompt punter-only">Ready to punt? Hit Start to log this practice.</div>
+          <div class="session-prompt kicker-only">Ready to kick? Hit Start to log this session.</div>
           <button type="button" id="start-session-btn" class="primary-btn">Start Session</button>
-          <div id="last-session-preview" class="last-session-preview" hidden></div>
+          <div id="last-session-preview" class="last-session-preview punter-only" hidden></div>
+          <div id="kicker-last-session-preview" class="last-session-preview kicker-only" hidden></div>
         </div>
         <div id="session-active" class="session-state" hidden>
           <div class="active-session-header">
             <span class="active-pill">LIVE</span>
             <span id="active-session-time">Started &mdash;</span>
           </div>
-          <div class="active-session-stats">
+          <div class="active-session-stats punter-only">
             <div class="session-stat">
               <div class="session-stat-num" id="live-count">0</div>
               <div class="session-stat-label">Kicks</div>
@@ -146,6 +154,24 @@
             <div class="session-stat">
               <div class="session-stat-num" id="live-best">&mdash;</div>
               <div class="session-stat-label">Best</div>
+            </div>
+          </div>
+          <div class="active-session-stats kicker-only">
+            <div class="session-stat">
+              <div class="session-stat-num" id="kicker-live-count">0</div>
+              <div class="session-stat-label">Attempts</div>
+            </div>
+            <div class="session-stat">
+              <div class="session-stat-num" id="kicker-live-made">0</div>
+              <div class="session-stat-label">Made</div>
+            </div>
+            <div class="session-stat">
+              <div class="session-stat-num" id="kicker-live-pct">&mdash;</div>
+              <div class="session-stat-label">FG %</div>
+            </div>
+            <div class="session-stat">
+              <div class="session-stat-num" id="kicker-live-long">&mdash;</div>
+              <div class="session-stat-label">Long</div>
             </div>
           </div>
           <div id="active-conditions-container"></div>

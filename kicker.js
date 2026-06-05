@@ -29,6 +29,11 @@
     attemptedCount: document.getElementById('kicker-attempted-count'),
     long: document.getElementById('kicker-long'),
     longMeta: document.getElementById('kicker-long-meta'),
+    liveCount: document.getElementById('kicker-live-count'),
+    liveMade: document.getElementById('kicker-live-made'),
+    livePct: document.getElementById('kicker-live-pct'),
+    liveLong: document.getElementById('kicker-live-long'),
+    lastPreview: document.getElementById('kicker-last-session-preview'),
   });
 
   function escapeHtml(str) {
@@ -215,10 +220,61 @@
     }
   }
 
+  function renderLiveSession() {
+    const { liveCount, liveMade, livePct, liveLong } = els();
+    const session = getActiveSession();
+    if (!session) {
+      liveCount.textContent = '0';
+      liveMade.textContent = '0';
+      livePct.innerHTML = '&mdash;';
+      liveLong.innerHTML = '&mdash;';
+      return;
+    }
+    const kicks = fgKicks(getKicksForSession(session.id));
+    const made = kicks.filter((k) => k.outcome === 'made');
+    liveCount.textContent = String(kicks.length);
+    liveMade.textContent = String(made.length);
+    livePct.innerHTML = kicks.length
+      ? `${Math.round((made.length / kicks.length) * 100)}<span class="unit">%</span>`
+      : '&mdash;';
+    if (made.length === 0) {
+      liveLong.innerHTML = '&mdash;';
+    } else {
+      const longest = made.reduce((b, k) => (k.distance > b.distance ? k : b), made[0]);
+      liveLong.innerHTML = `${longest.distance}<span class="unit">yd</span>`;
+    }
+  }
+
+  function renderLastPreview() {
+    const { lastPreview } = els();
+    const finished = getAllSessions().filter((s) => s.finishedAt !== null);
+    if (finished.length === 0) {
+      lastPreview.hidden = true;
+      return;
+    }
+    const last = finished.slice().sort((a, b) =>
+      (b.finishedAt || '').localeCompare(a.finishedAt || '')
+    )[0];
+    const lastKicks = fgKicks(getKicksForSession(last.id));
+    if (lastKicks.length === 0) {
+      lastPreview.hidden = true;
+      return;
+    }
+    const made = lastKicks.filter((k) => k.outcome === 'made').length;
+    const pct = Math.round((made / lastKicks.length) * 100);
+    lastPreview.hidden = false;
+    lastPreview.innerHTML = `
+      <span class="prev-label">Last Session</span>
+      <span class="prev-value">${formatDate(last.date)} &middot; ${lastKicks.length} attempt${lastKicks.length === 1 ? '' : 's'} &middot; ${pct}% made</span>
+    `;
+  }
+
   function render() {
     if (!active) return;
     renderActiveKicks();
     renderStats();
+    renderLiveSession();
+    renderLastPreview();
   }
 
   function activate() {
@@ -231,6 +287,10 @@
     outcomeButtons.forEach((b) => {
       b.addEventListener('click', () => setOutcome(b.dataset.outcome));
     });
+    const startBtn = document.getElementById('start-session-btn');
+    const finishBtn = document.getElementById('finish-session-btn');
+    if (startBtn) startBtn.addEventListener('click', () => setTimeout(render, 0));
+    if (finishBtn) finishBtn.addEventListener('click', () => setTimeout(render, 0));
     render();
   }
 
