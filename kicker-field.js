@@ -70,8 +70,8 @@
   }
 
   function fgDistance(side, yard) {
-    if (side === 'own') return (100 - yard) + 17;
-    return yard + 17;
+    if (side === 'own') return (100 - yard) + 18;
+    return yard + 18;
   }
 
   function readInputs() {
@@ -83,7 +83,7 @@
 
   function render() {
     const losX = losToX(state.side, state.yard);
-    const ballX = losX - 5;
+    const ballX = losX - 8;
     losMarker.setAttribute('x1', losX);
     losMarker.setAttribute('x2', losX);
     ballMarker.setAttribute('transform', `translate(${ballX}, ${FIELD.width / 2})`);
