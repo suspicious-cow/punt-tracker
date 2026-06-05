@@ -303,6 +303,29 @@
         </div>
       </section>
 
+      <section class="card" id="conditions-analysis-card" hidden>
+        <h2>Conditions Analysis</h2>
+        <p class="card-subtitle">Avg distance &amp; hangtime for kicks logged in each condition. Highlighted bucket is your best by distance.</p>
+        <div class="conditions-analysis-grid">
+          <div class="conditions-analysis-group">
+            <h3 class="conditions-analysis-heading">Wind Speed</h3>
+            <ul id="ca-wind-speed" class="conditions-analysis-list"></ul>
+          </div>
+          <div class="conditions-analysis-group">
+            <h3 class="conditions-analysis-heading">Wind Direction</h3>
+            <ul id="ca-wind-direction" class="conditions-analysis-list"></ul>
+          </div>
+          <div class="conditions-analysis-group">
+            <h3 class="conditions-analysis-heading">Weather</h3>
+            <ul id="ca-weather" class="conditions-analysis-list"></ul>
+          </div>
+          <div class="conditions-analysis-group">
+            <h3 class="conditions-analysis-heading">Surface</h3>
+            <ul id="ca-surface" class="conditions-analysis-list"></ul>
+          </div>
+        </div>
+      </section>
+
       <section class="card" id="past-sessions-card">
         <h2>Past Sessions</h2>
         <ul id="session-list" class="session-list">
@@ -539,6 +562,7 @@
   <script src="field.js"></script>
   <script src="stopwatch.js"></script>
   <script src="charts.js"></script>
+  <script src="conditions-analysis.js"></script>
   <script src="tracker.js"></script>
   <script>
     if ('serviceWorker' in navigator) {

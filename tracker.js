@@ -409,6 +409,9 @@ function renderAll() {
   renderActiveKicks();
   renderPastSessions();
   renderTrendCharts();
+  if (window.conditionsAnalysis) {
+    window.conditionsAnalysis.render(getAllKicks(), getAllSessions());
+  }
 }
 
 function handleFieldChange(fieldData) {
