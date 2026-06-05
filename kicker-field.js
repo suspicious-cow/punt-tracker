@@ -21,10 +21,11 @@
     sidelineTickHeight: 1.0,
   };
 
-  const state = { side: 'opp', yard: 17 };
+  const state = { side: 'opp', yard: 17, hash: 'middle' };
   let svg = null;
   let losInput = null;
   let sideRadios = null;
+  let hashRadios = null;
   let losMarker = null;
   let ballMarker = null;
   let trajectory = null;
@@ -69,6 +70,12 @@
     return FIELD.rightGoalX - yard;
   }
 
+  function hashToY(hash) {
+    if (hash === 'left') return FIELD.hashTopY;
+    if (hash === 'right') return FIELD.hashBottomY;
+    return FIELD.width / 2;
+  }
+
   function fgDistance(side, yard) {
     if (side === 'own') return (100 - yard) + 17;
     return yard + 17;
@@ -77,6 +84,8 @@
   function readInputs() {
     const sideChecked = document.querySelector('input[name="kicker-los-side"]:checked');
     state.side = sideChecked ? sideChecked.value : 'opp';
+    const hashChecked = document.querySelector('input[name="kicker-hash"]:checked');
+    state.hash = hashChecked ? hashChecked.value : 'middle';
     const raw = Number(losInput.value);
     state.yard = Number.isFinite(raw) ? Math.max(1, Math.min(50, Math.round(raw))) : 17;
   }
@@ -84,16 +93,18 @@
   function render() {
     const losX = losToX(state.side, state.yard);
     const ballX = losX - 7;
+    const ballY = hashToY(state.hash);
     losMarker.setAttribute('x1', losX);
     losMarker.setAttribute('x2', losX);
-    ballMarker.setAttribute('transform', `translate(${ballX}, ${FIELD.width / 2})`);
+    ballMarker.setAttribute('transform', `translate(${ballX}, ${ballY})`);
     trajectory.setAttribute('x1', ballX);
-    trajectory.setAttribute('y1', FIELD.width / 2);
+    trajectory.setAttribute('y1', ballY);
     trajectory.setAttribute('x2', FIELD.rightGoalX + 10);
     trajectory.setAttribute('y2', FIELD.width / 2);
     const dist = fgDistance(state.side, state.yard);
     const sideLabel = state.side === 'own' ? 'Own' : 'Opp';
-    prompt.innerHTML = `LOS at ${sideLabel} ${state.yard} &middot; ${dist} yd FG`;
+    const hashLabel = state.hash === 'left' ? 'L hash' : state.hash === 'right' ? 'R hash' : 'Middle';
+    prompt.innerHTML = `LOS at ${sideLabel} ${state.yard} &middot; ${hashLabel} &middot; ${dist} yd FG`;
     if (!userDistanceOverride && distanceInput) {
       distanceInput.value = dist;
     }
@@ -117,9 +128,12 @@
     hashGroup = document.getElementById('kicker-hash-marks');
     distanceInput = document.getElementById('kicker-distance');
 
+    hashRadios = document.querySelectorAll('input[name="kicker-hash"]');
+
     generateHashMarks();
     losInput.addEventListener('input', handleChange);
     sideRadios.forEach((r) => r.addEventListener('change', handleChange));
+    hashRadios.forEach((r) => r.addEventListener('change', handleChange));
 
     const stepUp = document.getElementById('kicker-los-step-up');
     const stepDown = document.getElementById('kicker-los-step-down');
@@ -154,6 +168,8 @@
     losInput.value = 17;
     const oppRadio = document.getElementById('kicker-los-side-opp');
     if (oppRadio) oppRadio.checked = true;
+    const middleHash = document.getElementById('kicker-hash-middle');
+    if (middleHash) middleHash.checked = true;
     handleChange();
   }
 
@@ -161,5 +177,9 @@
     return { side: state.side, yard: state.yard };
   }
 
-  window.kickerField = { setup, reset, getLos };
+  function getHash() {
+    return state.hash;
+  }
+
+  window.kickerField = { setup, reset, getLos, getHash };
 })();
