@@ -70,8 +70,8 @@
   }
 
   function fgDistance(side, yard) {
-    if (side === 'own') return (100 - yard) + 18;
-    return yard + 18;
+    if (side === 'own') return (100 - yard) + 17;
+    return yard + 17;
   }
 
   function readInputs() {
@@ -83,13 +83,13 @@
 
   function render() {
     const losX = losToX(state.side, state.yard);
-    const ballX = losX - 8;
+    const ballX = losX - 7;
     losMarker.setAttribute('x1', losX);
     losMarker.setAttribute('x2', losX);
     ballMarker.setAttribute('transform', `translate(${ballX}, ${FIELD.width / 2})`);
     trajectory.setAttribute('x1', ballX);
     trajectory.setAttribute('y1', FIELD.width / 2);
-    trajectory.setAttribute('x2', FIELD.rightGoalX);
+    trajectory.setAttribute('x2', FIELD.rightGoalX + 10);
     trajectory.setAttribute('y2', FIELD.width / 2);
     const dist = fgDistance(state.side, state.yard);
     const sideLabel = state.side === 'own' ? 'Own' : 'Opp';
