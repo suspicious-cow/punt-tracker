@@ -182,6 +182,92 @@
       <section class="card kicker-only" id="kicker-form-card">
         <form id="kicker-kick-form" autocomplete="off">
           <div class="field">
+            <label>Where it was kicked from</label>
+            <div class="field-picker">
+              <div class="los-input-row">
+                <span class="los-label">From</span>
+                <div class="los-side-toggle" role="radiogroup" aria-label="Kicker LOS side">
+                  <input type="radio" id="kicker-los-side-own" name="kicker-los-side" value="own">
+                  <label for="kicker-los-side-own">Own</label>
+                  <input type="radio" id="kicker-los-side-opp" name="kicker-los-side" value="opp" checked>
+                  <label for="kicker-los-side-opp">Opp</label>
+                </div>
+                <div class="los-stepper">
+                  <input type="number" id="kicker-los-yard" min="1" max="50" value="17" inputmode="numeric" aria-label="Kicker LOS yard line">
+                  <div class="los-stepper-buttons">
+                    <button type="button" id="kicker-los-step-up" class="los-step los-step-up" aria-label="Increase yard line">&#9650;</button>
+                    <button type="button" id="kicker-los-step-down" class="los-step los-step-down" aria-label="Decrease yard line">&#9660;</button>
+                  </div>
+                </div>
+                <span class="los-unit">yd line</span>
+              </div>
+
+              <p id="kicker-field-prompt" class="field-prompt">LOS at Opp 17 &middot; 34 yd FG</p>
+              <svg id="kicker-field-svg" viewBox="0 0 120 53" class="field-svg" preserveAspectRatio="xMidYMid meet">
+                <rect x="0" y="0" width="10" height="53" class="end-zone end-zone-own" />
+                <rect x="110" y="0" width="10" height="53" class="end-zone end-zone-opp" />
+                <rect x="10" y="0" width="100" height="53" class="field-of-play" />
+
+                <line x1="15" y1="0" x2="15" y2="53" class="yard-line" />
+                <line x1="20" y1="0" x2="20" y2="53" class="yard-line" />
+                <line x1="25" y1="0" x2="25" y2="53" class="yard-line" />
+                <line x1="30" y1="0" x2="30" y2="53" class="yard-line" />
+                <line x1="35" y1="0" x2="35" y2="53" class="yard-line" />
+                <line x1="40" y1="0" x2="40" y2="53" class="yard-line" />
+                <line x1="45" y1="0" x2="45" y2="53" class="yard-line" />
+                <line x1="50" y1="0" x2="50" y2="53" class="yard-line" />
+                <line x1="55" y1="0" x2="55" y2="53" class="yard-line" />
+                <line x1="60" y1="0" x2="60" y2="53" class="yard-line yard-line-fifty" />
+                <line x1="65" y1="0" x2="65" y2="53" class="yard-line" />
+                <line x1="70" y1="0" x2="70" y2="53" class="yard-line" />
+                <line x1="75" y1="0" x2="75" y2="53" class="yard-line" />
+                <line x1="80" y1="0" x2="80" y2="53" class="yard-line" />
+                <line x1="85" y1="0" x2="85" y2="53" class="yard-line" />
+                <line x1="90" y1="0" x2="90" y2="53" class="yard-line" />
+                <line x1="95" y1="0" x2="95" y2="53" class="yard-line" />
+                <line x1="100" y1="0" x2="100" y2="53" class="yard-line" />
+                <line x1="105" y1="0" x2="105" y2="53" class="yard-line" />
+
+                <line x1="10" y1="0" x2="10" y2="53" class="goal-line" />
+                <line x1="110" y1="0" x2="110" y2="53" class="goal-line" />
+
+                <g id="kicker-hash-marks"></g>
+
+                <text x="20" y="11" class="yard-number">10</text>
+                <text x="30" y="11" class="yard-number">20</text>
+                <text x="40" y="11" class="yard-number">30</text>
+                <text x="50" y="11" class="yard-number">40</text>
+                <text x="60" y="11" class="yard-number yard-number-fifty">50</text>
+                <text x="70" y="11" class="yard-number">40</text>
+                <text x="80" y="11" class="yard-number">30</text>
+                <text x="90" y="11" class="yard-number">20</text>
+                <text x="100" y="11" class="yard-number">10</text>
+
+                <text x="20" y="47" class="yard-number">10</text>
+                <text x="30" y="47" class="yard-number">20</text>
+                <text x="40" y="47" class="yard-number">30</text>
+                <text x="50" y="47" class="yard-number">40</text>
+                <text x="60" y="47" class="yard-number yard-number-fifty">50</text>
+                <text x="70" y="47" class="yard-number">40</text>
+                <text x="80" y="47" class="yard-number">30</text>
+                <text x="90" y="47" class="yard-number">20</text>
+                <text x="100" y="47" class="yard-number">10</text>
+
+                <line id="kicker-trajectory" class="punt-arrow" x1="0" y1="0" x2="0" y2="0" stroke-dasharray="2,1"></line>
+                <line id="kicker-los-marker" class="los-marker" x1="0" y1="0" x2="0" y2="53"></line>
+                <g id="kicker-ball-marker" class="landing-marker">
+                  <ellipse class="football-body" cx="0" cy="0" rx="2.6" ry="1.4"></ellipse>
+                  <line class="football-stripe" x1="-1.7" y1="0" x2="1.7" y2="0"></line>
+                  <line class="football-lace" x1="-0.7" y1="-0.35" x2="-0.7" y2="0.35"></line>
+                  <line class="football-lace" x1="-0.25" y1="-0.35" x2="-0.25" y2="0.35"></line>
+                  <line class="football-lace" x1="0.2" y1="-0.35" x2="0.2" y2="0.35"></line>
+                  <line class="football-lace" x1="0.65" y1="-0.35" x2="0.65" y2="0.35"></line>
+                </g>
+              </svg>
+            </div>
+          </div>
+
+          <div class="field">
             <label for="kicker-distance">Field Goal Distance <span class="unit">(yards)</span></label>
             <input
               type="number"
@@ -673,6 +759,7 @@
   <script src="stopwatch.js"></script>
   <script src="charts.js"></script>
   <script src="conditions-analysis.js"></script>
+  <script src="kicker-field.js"></script>
   <script src="kicker.js"></script>
   <script src="tracker.js"></script>
   <script>

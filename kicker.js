@@ -77,6 +77,7 @@
     document.querySelectorAll('.kicker-outcome-btn').forEach((b) => b.classList.remove('selected'));
     editBanner.hidden = true;
     saveBtn.textContent = 'Save Kick';
+    if (window.kickerField) window.kickerField.reset();
     distance.focus();
   }
 
@@ -88,12 +89,20 @@
     distance.value = kick.distance;
     notes.value = kick.notes || '';
     setOutcome(kick.outcome || null);
+    if (kick.position && kick.position.los) {
+      const losInput = document.getElementById('kicker-los-yard');
+      const sideRadio = document.getElementById(`kicker-los-side-${kick.position.los.side}`);
+      if (losInput) losInput.value = kick.position.los.yard;
+      if (sideRadio) sideRadio.checked = true;
+      if (losInput) losInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
     editBanner.hidden = false;
     saveBtn.textContent = 'Update Kick';
     editBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   function makeKick(distance, outcome, notesText, sessionId) {
+    const los = window.kickerField ? window.kickerField.getLos() : null;
     return {
       id: `kick-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       sessionId,
@@ -104,7 +113,7 @@
       kickType: 'fg',
       outcome,
       notes: notesText.trim(),
-      position: null,
+      position: los ? { los: { side: los.side, yard: los.yard } } : null,
       hiddenFromTeam: false,
     };
   }
@@ -119,11 +128,13 @@
     if (editingKickId) {
       const existing = getAllKicks().find((k) => k.id === editingKickId);
       if (existing) {
+        const los = window.kickerField ? window.kickerField.getLos() : null;
         updateKick({
           ...existing,
           distance: Number(distance.value),
           outcome: selectedOutcome,
           notes: notes.value.trim(),
+          position: los ? { los: { side: los.side, yard: los.yard } } : existing.position,
         });
       }
     } else {
@@ -291,6 +302,7 @@
     const finishBtn = document.getElementById('finish-session-btn');
     if (startBtn) startBtn.addEventListener('click', () => setTimeout(render, 0));
     if (finishBtn) finishBtn.addEventListener('click', () => setTimeout(render, 0));
+    if (window.kickerField) window.kickerField.setup();
     render();
   }
 
