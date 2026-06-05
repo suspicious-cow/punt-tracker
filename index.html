@@ -194,8 +194,11 @@
               <label for="kicker-type-fg">Field Goal</label>
               <input type="radio" id="kicker-type-pat" name="kicker-type" value="pat">
               <label for="kicker-type-pat">PAT</label>
+              <input type="radio" id="kicker-type-kickoff" name="kicker-type" value="kickoff">
+              <label for="kicker-type-kickoff">Kickoff</label>
             </div>
           </div>
+          <div id="kicker-fg-pat-section">
           <div class="field">
             <label>Where it was kicked from</label>
             <div class="field-picker">
@@ -302,6 +305,100 @@
             </div>
             <p id="kicker-outcome-error" class="form-error" hidden>Pick made or missed.</p>
           </div>
+          </div>
+
+          <div id="kicker-kickoff-section" hidden>
+            <div class="field">
+              <label for="kickoff-hangtime">Hangtime <span class="unit">(seconds)</span></label>
+              <div class="stopwatch">
+                <button type="button" id="kickoff-stopwatch-btn" class="stopwatch-btn" data-state="idle">Tap When Ball Is Kicked</button>
+                <div class="stopwatch-display-row">
+                  <span id="kickoff-stopwatch-display" class="stopwatch-display">0.00</span>
+                  <span class="stopwatch-unit">sec</span>
+                  <button type="button" id="kickoff-stopwatch-reset" class="stopwatch-reset" hidden>Reset</button>
+                </div>
+                <p id="kickoff-stopwatch-help" class="stopwatch-help">Use the stopwatch or type the number below.</p>
+              </div>
+              <input type="number" id="kickoff-hangtime" name="kickoff-hangtime" inputmode="decimal" step="0.1" min="0" max="10" placeholder="e.g. 4.2">
+            </div>
+
+            <div class="field">
+              <label>Where it landed</label>
+              <div class="field-picker">
+                <p id="kickoff-field-prompt" class="field-prompt">Ball at Own 40 &middot; drag the football to where it landed</p>
+                <svg id="kickoff-field-svg" viewBox="0 0 120 53" class="field-svg" preserveAspectRatio="xMidYMid meet">
+                  <rect x="0" y="0" width="10" height="53" class="end-zone end-zone-own" />
+                  <rect x="110" y="0" width="10" height="53" class="end-zone end-zone-opp" />
+                  <rect x="10" y="0" width="100" height="53" class="field-of-play" />
+
+                  <line x1="15" y1="0" x2="15" y2="53" class="yard-line" />
+                  <line x1="20" y1="0" x2="20" y2="53" class="yard-line" />
+                  <line x1="25" y1="0" x2="25" y2="53" class="yard-line" />
+                  <line x1="30" y1="0" x2="30" y2="53" class="yard-line" />
+                  <line x1="35" y1="0" x2="35" y2="53" class="yard-line" />
+                  <line x1="40" y1="0" x2="40" y2="53" class="yard-line" />
+                  <line x1="45" y1="0" x2="45" y2="53" class="yard-line" />
+                  <line x1="50" y1="0" x2="50" y2="53" class="yard-line" />
+                  <line x1="55" y1="0" x2="55" y2="53" class="yard-line" />
+                  <line x1="60" y1="0" x2="60" y2="53" class="yard-line yard-line-fifty" />
+                  <line x1="65" y1="0" x2="65" y2="53" class="yard-line" />
+                  <line x1="70" y1="0" x2="70" y2="53" class="yard-line" />
+                  <line x1="75" y1="0" x2="75" y2="53" class="yard-line" />
+                  <line x1="80" y1="0" x2="80" y2="53" class="yard-line" />
+                  <line x1="85" y1="0" x2="85" y2="53" class="yard-line" />
+                  <line x1="90" y1="0" x2="90" y2="53" class="yard-line" />
+                  <line x1="95" y1="0" x2="95" y2="53" class="yard-line" />
+                  <line x1="100" y1="0" x2="100" y2="53" class="yard-line" />
+                  <line x1="105" y1="0" x2="105" y2="53" class="yard-line" />
+
+                  <line x1="10" y1="0" x2="10" y2="53" class="goal-line" />
+                  <line x1="110" y1="0" x2="110" y2="53" class="goal-line" />
+
+                  <g id="kickoff-hash-marks"></g>
+
+                  <text x="20" y="11" class="yard-number">10</text>
+                  <text x="30" y="11" class="yard-number">20</text>
+                  <text x="40" y="11" class="yard-number">30</text>
+                  <text x="50" y="11" class="yard-number">40</text>
+                  <text x="60" y="11" class="yard-number yard-number-fifty">50</text>
+                  <text x="70" y="11" class="yard-number">40</text>
+                  <text x="80" y="11" class="yard-number">30</text>
+                  <text x="90" y="11" class="yard-number">20</text>
+                  <text x="100" y="11" class="yard-number">10</text>
+
+                  <text x="20" y="47" class="yard-number">10</text>
+                  <text x="30" y="47" class="yard-number">20</text>
+                  <text x="40" y="47" class="yard-number">30</text>
+                  <text x="50" y="47" class="yard-number">40</text>
+                  <text x="60" y="47" class="yard-number yard-number-fifty">50</text>
+                  <text x="70" y="47" class="yard-number">40</text>
+                  <text x="80" y="47" class="yard-number">30</text>
+                  <text x="90" y="47" class="yard-number">20</text>
+                  <text x="100" y="47" class="yard-number">10</text>
+
+                  <line id="kickoff-trajectory" class="punt-arrow" x1="0" y1="0" x2="0" y2="0" display="none"></line>
+                  <circle id="kickoff-kicker-marker" class="punter-marker" cx="50" cy="26.5" r="1.5"></circle>
+                  <g id="kickoff-landing-group" display="none">
+                    <g id="kickoff-landing-marker" class="landing-marker">
+                      <ellipse class="football-body" cx="0" cy="0" rx="2.6" ry="1.4"></ellipse>
+                      <line class="football-stripe" x1="-1.7" y1="0" x2="1.7" y2="0"></line>
+                      <line class="football-lace" x1="-0.7" y1="-0.35" x2="-0.7" y2="0.35"></line>
+                      <line class="football-lace" x1="-0.25" y1="-0.35" x2="-0.25" y2="0.35"></line>
+                      <line class="football-lace" x1="0.2" y1="-0.35" x2="0.2" y2="0.35"></line>
+                      <line class="football-lace" x1="0.65" y1="-0.35" x2="0.65" y2="0.35"></line>
+                    </g>
+                    <circle id="kickoff-landing-touch" class="landing-touch" cx="0" cy="0" r="6"></circle>
+                  </g>
+                </svg>
+                <div class="field-controls">
+                  <p id="kickoff-field-summary" class="field-summary"></p>
+                  <button type="button" id="kickoff-field-reset" class="field-reset" hidden>Reset Landing</button>
+                </div>
+                <p id="kickoff-error" class="form-error" hidden>Drag the football to where it landed.</p>
+              </div>
+            </div>
+          </div>
+
           <div class="field">
             <label for="kicker-notes">Notes</label>
             <textarea id="kicker-notes" name="kicker-notes" rows="2" maxlength="160" placeholder="optional"></textarea>
@@ -773,6 +870,7 @@
   <script src="charts.js"></script>
   <script src="conditions-analysis.js"></script>
   <script src="kicker-field.js"></script>
+  <script src="kickoff-field.js"></script>
   <script src="kicker.js"></script>
   <script src="tracker.js"></script>
   <script>

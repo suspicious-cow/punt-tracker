@@ -2467,6 +2467,9 @@ body.position-kicker .punter-only { display: none !important; }
 
 .kicker-row-made { background: var(--good); }
 .kicker-row-missed { background: var(--bad); }
+.kicker-row-touchback { background: var(--bad); }
+.kicker-row-inside20 { background: var(--good); }
+.kicker-row-kickoff { background: var(--ink-soft); color: #fff; }
 
 .kicker-row-notes {
   font-size: 0.85rem;

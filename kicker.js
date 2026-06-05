@@ -16,6 +16,9 @@
     outcomeButtons: document.querySelectorAll('.kicker-outcome-btn'),
     outcomeError: document.getElementById('kicker-outcome-error'),
     typeRadios: document.querySelectorAll('input[name="kicker-type"]'),
+    fgPatSection: document.getElementById('kicker-fg-pat-section'),
+    kickoffSection: document.getElementById('kicker-kickoff-section'),
+    kickoffHangtime: document.getElementById('kickoff-hangtime'),
     kickList: document.getElementById('kicker-kick-list'),
     emptyState: document.getElementById('kicker-empty-state'),
     editBanner: document.getElementById('kicker-edit-mode-banner'),
@@ -37,6 +40,91 @@
     liveLong: document.getElementById('kicker-live-long'),
     lastPreview: document.getElementById('kicker-last-session-preview'),
   });
+
+  const kickoffStopwatch = (function () {
+    const sw = { startTime: null, rafHandle: null };
+    let btn = null;
+    let display = null;
+    let resetBtn = null;
+    let help = null;
+    let onMeasured = null;
+    let bound = false;
+
+    function setState(state) {
+      btn.dataset.state = state;
+      if (state === 'idle') {
+        btn.textContent = 'Tap When Ball Is Kicked';
+        help.textContent = 'Use the stopwatch or type the number below.';
+        resetBtn.hidden = true;
+      } else if (state === 'running') {
+        btn.textContent = 'Tap When It Lands';
+        help.textContent = 'Timing in progress…';
+        resetBtn.hidden = true;
+      } else if (state === 'done') {
+        btn.textContent = 'Tap to Restart';
+        help.textContent = 'Saved to hangtime above. Tap again to redo.';
+        resetBtn.hidden = false;
+      }
+    }
+
+    function tick() {
+      const elapsed = (performance.now() - sw.startTime) / 1000;
+      display.textContent = elapsed.toFixed(2);
+      sw.rafHandle = requestAnimationFrame(tick);
+    }
+
+    function start() {
+      sw.startTime = performance.now();
+      display.textContent = '0.00';
+      setState('running');
+      tick();
+    }
+
+    function stop() {
+      if (sw.rafHandle !== null) {
+        cancelAnimationFrame(sw.rafHandle);
+        sw.rafHandle = null;
+      }
+      const elapsed = (performance.now() - sw.startTime) / 1000;
+      display.textContent = elapsed.toFixed(2);
+      setState('done');
+      sw.startTime = null;
+      if (onMeasured) onMeasured(elapsed);
+    }
+
+    function reset() {
+      if (sw.rafHandle !== null) {
+        cancelAnimationFrame(sw.rafHandle);
+        sw.rafHandle = null;
+      }
+      sw.startTime = null;
+      if (!display) return;
+      display.textContent = '0.00';
+      setState('idle');
+    }
+
+    function handleTap() {
+      const state = btn.dataset.state;
+      if (state === 'idle' || state === 'done') start();
+      else if (state === 'running') stop();
+    }
+
+    function setup(handlers) {
+      onMeasured = handlers && handlers.onMeasured;
+      if (bound) return;
+      btn = document.getElementById('kickoff-stopwatch-btn');
+      display = document.getElementById('kickoff-stopwatch-display');
+      resetBtn = document.getElementById('kickoff-stopwatch-reset');
+      help = document.getElementById('kickoff-stopwatch-help');
+      if (!btn) return;
+      btn.addEventListener('click', handleTap);
+      resetBtn.addEventListener('click', reset);
+      reset();
+      bound = true;
+    }
+
+    return { setup, reset };
+  })();
 
   function escapeHtml(str) {
     const div = document.createElement('div');
@@ -66,9 +154,38 @@
     return allKicks.filter((k) => k.kickType === 'pat');
   }
 
+  function kickoffKicks(allKicks) {
+    return allKicks.filter((k) => k.kickType === 'kickoff');
+  }
+
   function currentKickType() {
     const checked = document.querySelector('input[name="kicker-type"]:checked');
     return checked ? checked.value : 'fg';
+  }
+
+  function kickoffResult(kick) {
+    if (!kick.position || !kick.position.landing) return 'normal';
+    const land = kick.position.landing;
+    if (land.inEndZone && land.side === 'opp') return 'touchback';
+    if (land.side === 'opp' && land.yard <= 20 && !land.inEndZone) return 'inside20';
+    return 'normal';
+  }
+
+  function applyKickTypeUI(type) {
+    const { fgPatSection, kickoffSection } = els();
+    fgPatSection.hidden = (type === 'kickoff');
+    kickoffSection.hidden = (type !== 'kickoff');
+    if (type === 'kickoff') {
+      if (window.kickoffField) window.kickoffField.setup({ onChange: () => {} });
+      kickoffStopwatch.setup({
+        onMeasured: (sec) => {
+          const input = document.getElementById('kickoff-hangtime');
+          if (input) input.value = sec.toFixed(2);
+        },
+      });
+    } else if (window.kickerField) {
+      window.kickerField.setMode(type);
+    }
   }
 
   function setOutcome(value) {
@@ -90,9 +207,11 @@
     editBanner.hidden = true;
     saveBtn.textContent = 'Save Kick';
     if (window.kickerField) window.kickerField.reset();
+    if (window.kickoffField) window.kickoffField.reset();
+    kickoffStopwatch.reset();
     const stickyRadio = document.getElementById(`kicker-type-${stickyType}`);
     if (stickyRadio) stickyRadio.checked = true;
-    if (window.kickerField) window.kickerField.setMode(stickyType);
+    applyKickTypeUI(stickyType);
   }
 
   function startEdit(kickId) {
@@ -101,22 +220,29 @@
     editingKickId = kickId;
     const { notes, editBanner, saveBtn } = els();
     notes.value = kick.notes || '';
-    setOutcome(kick.outcome || null);
-    const kickType = kick.kickType === 'pat' ? 'pat' : 'fg';
+    const kickType = kick.kickType === 'pat' ? 'pat'
+      : kick.kickType === 'kickoff' ? 'kickoff'
+      : 'fg';
     const typeRadio = document.getElementById(`kicker-type-${kickType}`);
     if (typeRadio) typeRadio.checked = true;
-    if (window.kickerField) window.kickerField.setMode(kickType);
-    if (kickType === 'fg' && kick.position && kick.position.los) {
-      const losInput = document.getElementById('kicker-los-yard');
-      const sideRadio = document.getElementById(`kicker-los-side-${kick.position.los.side}`);
-      if (losInput) losInput.value = kick.position.los.yard;
-      if (sideRadio) sideRadio.checked = true;
-      if (losInput) losInput.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-    if (kick.position && kick.position.hash) {
-      const hashRadio = document.getElementById(`kicker-hash-${kick.position.hash}`);
-      if (hashRadio) hashRadio.checked = true;
-      if (window.kickerField) {
+    applyKickTypeUI(kickType);
+    if (kickType === 'kickoff') {
+      setOutcome(null);
+      if (window.kickoffField) window.kickoffField.loadData(kick.position);
+      const hangInput = document.getElementById('kickoff-hangtime');
+      if (hangInput) hangInput.value = kick.hangtime || '';
+    } else {
+      setOutcome(kick.outcome || null);
+      if (kickType === 'fg' && kick.position && kick.position.los) {
+        const losInput = document.getElementById('kicker-los-yard');
+        const sideRadio = document.getElementById(`kicker-los-side-${kick.position.los.side}`);
+        if (losInput) losInput.value = kick.position.los.yard;
+        if (sideRadio) sideRadio.checked = true;
+        if (losInput) losInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      if (kick.position && kick.position.hash) {
+        const hashRadio = document.getElementById(`kicker-hash-${kick.position.hash}`);
+        if (hashRadio) hashRadio.checked = true;
         const losInput = document.getElementById('kicker-los-yard');
         if (losInput) losInput.dispatchEvent(new Event('input', { bubbles: true }));
       }
@@ -127,6 +253,25 @@
   }
 
   function makeKick(outcome, notesText, sessionId) {
+    const type = currentKickType();
+    if (type === 'kickoff') {
+      const koData = window.kickoffField ? window.kickoffField.getData() : null;
+      const hangInput = document.getElementById('kickoff-hangtime');
+      const hangtime = hangInput && hangInput.value ? Number(hangInput.value) : 0;
+      return {
+        id: `kick-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        sessionId,
+        date: todayKey(),
+        timestamp: new Date().toISOString(),
+        distance: koData ? koData.distance : 0,
+        hangtime,
+        kickType: 'kickoff',
+        outcome: null,
+        notes: notesText.trim(),
+        position: koData ? { landing: koData.landing } : null,
+        hiddenFromTeam: false,
+      };
+    }
     const los = window.kickerField ? window.kickerField.getLos() : null;
     const hash = window.kickerField ? window.kickerField.getHash() : null;
     const distance = window.kickerField ? window.kickerField.getDistance() : 0;
@@ -149,25 +294,50 @@
   function handleSubmit(event) {
     event.preventDefault();
     const { notes, outcomeError } = els();
-    if (!selectedOutcome) {
+    const type = currentKickType();
+    const koErr = document.getElementById('kickoff-error');
+    if (type !== 'kickoff' && !selectedOutcome) {
       outcomeError.hidden = false;
       return;
+    }
+    if (type === 'kickoff') {
+      const koData = window.kickoffField ? window.kickoffField.getData() : null;
+      if (!koData) {
+        if (koErr) koErr.hidden = false;
+        return;
+      }
+      if (koErr) koErr.hidden = true;
     }
     if (editingKickId) {
       const existing = getAllKicks().find((k) => k.id === editingKickId);
       if (existing) {
-        const los = window.kickerField ? window.kickerField.getLos() : null;
-        const hash = window.kickerField ? window.kickerField.getHash() : null;
-        const distance = window.kickerField ? window.kickerField.getDistance() : existing.distance;
-        const kickType = window.kickerField ? window.kickerField.getMode() : existing.kickType;
-        updateKick({
-          ...existing,
-          distance,
-          kickType,
-          outcome: selectedOutcome,
-          notes: notes.value.trim(),
-          position: los ? { los: { side: los.side, yard: los.yard }, hash } : existing.position,
-        });
+        if (type === 'kickoff') {
+          const koData = window.kickoffField ? window.kickoffField.getData() : null;
+          const hangInput = document.getElementById('kickoff-hangtime');
+          const hangtime = hangInput && hangInput.value ? Number(hangInput.value) : existing.hangtime;
+          updateKick({
+            ...existing,
+            kickType: 'kickoff',
+            distance: koData ? koData.distance : existing.distance,
+            hangtime,
+            outcome: null,
+            notes: notes.value.trim(),
+            position: koData ? { landing: koData.landing } : existing.position,
+          });
+        } else {
+          const los = window.kickerField ? window.kickerField.getLos() : null;
+          const hash = window.kickerField ? window.kickerField.getHash() : null;
+          const distance = window.kickerField ? window.kickerField.getDistance() : existing.distance;
+          const kickType = window.kickerField ? window.kickerField.getMode() : existing.kickType;
+          updateKick({
+            ...existing,
+            distance,
+            kickType,
+            outcome: selectedOutcome,
+            notes: notes.value.trim(),
+            position: los ? { los: { side: los.side, yard: los.yard }, hash } : existing.position,
+          });
+        }
       }
     } else {
       const session = getActiveSession();
@@ -194,15 +364,28 @@
   }
 
   function kickRowHtml(kick) {
-    const outcomeClass = kick.outcome === 'made' ? 'kicker-row-made' : 'kicker-row-missed';
-    const outcomeLabel = kick.outcome === 'made' ? 'MADE' : 'MISSED';
-    const distanceLabel = kick.kickType === 'pat'
-      ? 'PAT'
-      : `${kick.distance}<span class="unit">yd</span>`;
+    let distanceLabel;
+    let badgeLabel;
+    let badgeClass;
+    if (kick.kickType === 'pat') {
+      distanceLabel = 'PAT';
+      badgeLabel = kick.outcome === 'made' ? 'MADE' : 'MISSED';
+      badgeClass = kick.outcome === 'made' ? 'kicker-row-made' : 'kicker-row-missed';
+    } else if (kick.kickType === 'kickoff') {
+      distanceLabel = `${kick.distance}<span class="unit">yd</span>`;
+      const result = kickoffResult(kick);
+      if (result === 'touchback') { badgeLabel = 'TOUCHBACK'; badgeClass = 'kicker-row-touchback'; }
+      else if (result === 'inside20') { badgeLabel = 'INSIDE 20'; badgeClass = 'kicker-row-inside20'; }
+      else { badgeLabel = `KO &middot; ${(kick.hangtime || 0).toFixed(2)}s`; badgeClass = 'kicker-row-kickoff'; }
+    } else {
+      distanceLabel = `${kick.distance}<span class="unit">yd</span>`;
+      badgeLabel = kick.outcome === 'made' ? 'MADE' : 'MISSED';
+      badgeClass = kick.outcome === 'made' ? 'kicker-row-made' : 'kicker-row-missed';
+    }
     return `
       <div class="kicker-row-distance">${distanceLabel}</div>
       <div class="kicker-row-meta">
-        <div class="kicker-row-outcome ${outcomeClass}">${outcomeLabel}</div>
+        <div class="kicker-row-outcome ${badgeClass}">${badgeLabel}</div>
         ${kick.notes ? `<div class="kicker-row-notes">${escapeHtml(kick.notes)}</div>` : ''}
       </div>
       <div class="kicker-row-actions">
@@ -347,9 +530,7 @@
       b.addEventListener('click', () => setOutcome(b.dataset.outcome));
     });
     typeRadios.forEach((r) => {
-      r.addEventListener('change', () => {
-        if (window.kickerField) window.kickerField.setMode(r.value);
-      });
+      r.addEventListener('change', () => { applyKickTypeUI(r.value); });
     });
     const startBtn = document.getElementById('start-session-btn');
     const finishBtn = document.getElementById('finish-session-btn');
