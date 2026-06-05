@@ -77,58 +77,60 @@ async function setAuthState(user) {
 async function reconcileLocalData(userId) {
   const owner = window.localData ? window.localData.getDataOwner() : null;
 
-  if (owner === userId) {
-    // Same user as last sign-in on this device — keep local data.
-    await maybeMigrate(userId);
-    return;
-  }
-
-  if (!owner) {
-    // No owner tag. Two distinct sub-cases:
-    //   a) local is empty — fresh device OR signed-out-then-back-in
-    //      (sign-out clears local + owner). Pull cloud to restore the
-    //      user's history, otherwise their data appears "lost."
-    //   b) local has data — legacy pre-owner-tracking data OR local-only
-    //      data not yet in cloud. Don't clear; run migration prompt.
-    const hasLocalData = getAllKicks().length > 0 || getAllSessions().length > 0;
-    if (!hasLocalData) {
-      try {
-        await loadCloudDataToLocal(userId);
-      } catch (err) {
-        console.error('[auth] cloud reload failed (no-owner path)', err);
-        if (window.showToast) {
-          window.showToast('Could not load your cloud data. Check your connection.', 'bad');
-        }
+  // Owner mismatch: local data belongs to a different user. Wipe + load.
+  if (owner && owner !== userId) {
+    try {
+      await loadCloudDataToLocal(userId);
+      if (window.syncQueue) window.syncQueue.clear();
+    } catch (err) {
+      console.error('[auth] cloud reload failed', err);
+      if (window.localData) window.localData.clearAllLocalData();
+      if (window.syncQueue) window.syncQueue.clear();
+      if (window.showToast) {
+        window.showToast('Could not load your cloud data. Check your connection.', 'bad');
       }
-      if (window.localData) window.localData.setDataOwner(userId);
-      notifyLocalDataChanged();
-      return;
     }
-    await maybeMigrate(userId);
     if (window.localData) window.localData.setDataOwner(userId);
+    notifyLocalDataChanged();
     return;
   }
 
-  // Owner tag is set to a different user — local data definitively belongs
-  // to someone else. Load this user's cloud data first; on success, the
-  // writes inside loadCloudDataToLocal have already overwritten localStorage.
-  // On failure, still wipe (don't leave foreign data accessible).
+  // Same user, or no owner tag. Push any local-only items up, then pull
+  // cloud down and merge anything cloud doesn't have yet. This covers:
+  //   - returning user with synced data (no-op, fast)
+  //   - signed-out-then-back-in (local empty -> cloud restored)
+  //   - offline writes that hadn't synced yet (pushed up, kept in local)
+  //   - legacy pre-owner-tracking data (silently uploaded)
   try {
-    await loadCloudDataToLocal(userId);
-    if (window.syncQueue) window.syncQueue.clear();
-    if (window.localData) window.localData.setDataOwner(userId);
+    await pushLocalToCloud(userId);
+    await loadCloudDataToLocal(userId, { merge: true });
   } catch (err) {
-    console.error('[auth] cloud reload failed', err);
-    if (window.localData) window.localData.clearAllLocalData();
-    if (window.syncQueue) window.syncQueue.clear();
+    console.error('[auth] sync failed', err);
     if (window.showToast) {
-      window.showToast('Could not load your cloud data. Check your connection.', 'bad');
+      window.showToast('Could not sync with cloud. Check your connection.', 'bad');
     }
   }
+  if (window.localData) window.localData.setDataOwner(userId);
   notifyLocalDataChanged();
 }
 
-async function loadCloudDataToLocal(userId) {
+async function pushLocalToCloud(userId) {
+  const sessions = getAllSessions();
+  const kicks = getAllKicks();
+  if (sessions.length) {
+    const rows = sessions.map((s) => sessionToCloud(s, userId));
+    const { error } = await db().from('sessions').upsert(rows, { onConflict: 'id' });
+    if (error) console.error('[sync] push sessions failed', error);
+  }
+  if (kicks.length) {
+    const rows = kicks.map((k) => kickToCloud(k, userId));
+    const { error } = await db().from('kicks').upsert(rows, { onConflict: 'id' });
+    if (error) console.error('[sync] push kicks failed', error);
+  }
+}
+
+async function loadCloudDataToLocal(userId, options) {
+  const merge = options && options.merge === true;
   const [sessionsRes, kicksRes] = await Promise.all([
     db().from('sessions')
       .select('id, date, started_at, finished_at, wind_mph, wind_direction, weather, surface')
@@ -140,7 +142,7 @@ async function loadCloudDataToLocal(userId) {
   if (sessionsRes.error) throw sessionsRes.error;
   if (kicksRes.error) throw kicksRes.error;
 
-  const sessions = (sessionsRes.data || []).map((s) => ({
+  let sessions = (sessionsRes.data || []).map((s) => ({
     id: s.id,
     date: s.date,
     startedAt: s.started_at,
@@ -151,7 +153,7 @@ async function loadCloudDataToLocal(userId) {
     surface: s.surface,
   }));
 
-  const kicks = (kicksRes.data || []).map((k) => {
+  let kicks = (kicksRes.data || []).map((k) => {
     const position = k.position || null;
     return {
       id: k.id,
@@ -166,6 +168,13 @@ async function loadCloudDataToLocal(userId) {
       timestamp: k.kicked_at,
     };
   });
+
+  if (merge) {
+    const cSids = new Set(sessions.map((s) => s.id));
+    const cKids = new Set(kicks.map((k) => k.id));
+    sessions = [...sessions, ...getAllSessions().filter((s) => !cSids.has(s.id))];
+    kicks = [...kicks, ...getAllKicks().filter((k) => !cKids.has(k.id))];
+  }
 
   if (window.localData) {
     window.localData.writeSessions(sessions);
