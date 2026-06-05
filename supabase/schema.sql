@@ -49,6 +49,10 @@ create table if not exists public.sessions (
   date text not null,
   started_at timestamptz not null,
   finished_at timestamptz,
+  wind_mph integer,
+  wind_direction text check (wind_direction in ('into','with','cross')),
+  weather text check (weather in ('clear','cloudy','rain','wet')),
+  surface text check (surface in ('turf','grass','wet_grass')),
   created_at timestamptz not null default now()
 );
 

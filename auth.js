@@ -115,7 +115,7 @@ async function reconcileLocalData(userId) {
 async function loadCloudDataToLocal(userId) {
   const [sessionsRes, kicksRes] = await Promise.all([
     db().from('sessions')
-      .select('id, date, started_at, finished_at')
+      .select('id, date, started_at, finished_at, wind_mph, wind_direction, weather, surface')
       .eq('user_id', userId),
     db().from('kicks')
       .select('id, session_id, distance, hangtime, position, notes, date, hidden_from_team, kicked_at')
@@ -129,6 +129,10 @@ async function loadCloudDataToLocal(userId) {
     date: s.date,
     startedAt: s.started_at,
     finishedAt: s.finished_at,
+    windMph: s.wind_mph,
+    windDirection: s.wind_direction,
+    weather: s.weather,
+    surface: s.surface,
   }));
 
   const kicks = (kicksRes.data || []).map((k) => {
@@ -345,13 +349,18 @@ function kickToCloud(kick, userId) {
 }
 
 function sessionToCloud(session, userId) {
-  return {
+  const payload = {
     id: session.id,
     user_id: userId,
     date: session.date,
     started_at: session.startedAt || new Date().toISOString(),
     finished_at: session.finishedAt || null,
   };
+  if (session.windMph != null) payload.wind_mph = session.windMph;
+  if (session.windDirection) payload.wind_direction = session.windDirection;
+  if (session.weather) payload.weather = session.weather;
+  if (session.surface) payload.surface = session.surface;
+  return payload;
 }
 
 async function performMigration() {

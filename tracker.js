@@ -35,6 +35,80 @@ let editingKickId = null;
 let expandedSessionId = null;
 let personalBests = {};
 
+const CONDITIONS_FIELDS = {
+  windDirection: ['into', 'with', 'cross'],
+  weather: ['clear', 'cloudy', 'rain', 'wet'],
+  surface: ['turf', 'grass', 'wet_grass'],
+};
+
+const CONDITIONS_LABELS = {
+  into: 'Into',
+  with: 'With',
+  cross: 'Cross',
+  clear: 'Clear',
+  cloudy: 'Cloudy',
+  rain: 'Rain',
+  wet: 'Wet',
+  turf: 'Turf',
+  grass: 'Grass',
+  wet_grass: 'Wet Grass',
+};
+
+function conditionsSummary(session) {
+  if (!session) return '';
+  const parts = [];
+  if (session.windMph != null && session.windMph !== '') {
+    const dir = session.windDirection ? ` ${CONDITIONS_LABELS[session.windDirection].toLowerCase()}` : '';
+    parts.push(`${session.windMph}mph${dir}`);
+  } else if (session.windDirection) {
+    parts.push(CONDITIONS_LABELS[session.windDirection]);
+  }
+  if (session.weather) parts.push(CONDITIONS_LABELS[session.weather]);
+  if (session.surface) parts.push(CONDITIONS_LABELS[session.surface]);
+  return parts.join(' · ');
+}
+
+function renderConditionsPanel(session) {
+  const windMph = session.windMph != null && session.windMph !== '' ? session.windMph : '';
+  const renderChips = (field) =>
+    CONDITIONS_FIELDS[field]
+      .map((value) => {
+        const selected = session[field] === value;
+        return `<button type="button" class="conditions-chip${selected ? ' selected' : ''}" data-conditions-field="${field}" data-conditions-value="${value}">${CONDITIONS_LABELS[value]}</button>`;
+      })
+      .join('');
+  return `
+    <div class="conditions-panel" data-conditions-session-id="${session.id}">
+      <div class="conditions-row">
+        <span class="conditions-row-label">Wind</span>
+        <div class="conditions-row-body">
+          <input type="number" class="conditions-mph-input" min="0" max="60" inputmode="numeric" placeholder="mph" value="${windMph}" data-conditions-field="windMph" aria-label="Wind speed in mph">
+          <div class="conditions-chips">${renderChips('windDirection')}</div>
+        </div>
+      </div>
+      <div class="conditions-row">
+        <span class="conditions-row-label">Weather</span>
+        <div class="conditions-chips">${renderChips('weather')}</div>
+      </div>
+      <div class="conditions-row">
+        <span class="conditions-row-label">Surface</span>
+        <div class="conditions-chips">${renderChips('surface')}</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderActiveConditions() {
+  const container = document.getElementById('active-conditions-container');
+  if (!container) return;
+  const active = getActiveSession();
+  if (!active) {
+    container.innerHTML = '';
+    return;
+  }
+  container.innerHTML = renderConditionsPanel(active);
+}
+
 function todayKey() {
   const now = new Date();
   const y = now.getFullYear();
@@ -270,6 +344,11 @@ function renderPastSessions() {
     const expanded = session.id === expandedSessionId;
     if (expanded) li.classList.add('expanded');
 
+    const condSummary = conditionsSummary(session);
+    const condLine = condSummary
+      ? `<div class="session-row-conditions">${condSummary}</div>`
+      : '';
+
     li.innerHTML = `
       <button type="button" class="session-row-toggle" data-session-id="${session.id}" aria-expanded="${expanded}">
         <div class="session-row-header">
@@ -285,12 +364,18 @@ function renderPastSessions() {
             <span class="srs-sep">·</span>
             <span>±${summary.stdDevDistance.toFixed(1)}<span class="unit"> std</span></span>
           </div>
+          ${condLine}
         </div>
         <span class="session-row-chevron">${expanded ? '▴' : '▾'}</span>
       </button>
     `;
 
     if (expanded) {
+      const conditionsWrap = document.createElement('div');
+      conditionsWrap.className = 'session-row-conditions-edit';
+      conditionsWrap.innerHTML = renderConditionsPanel(session);
+      li.appendChild(conditionsWrap);
+
       const sessionKicks = getKicksForSession(session.id);
       const nested = document.createElement('ul');
       nested.className = 'session-kicks';
@@ -318,6 +403,7 @@ function renderPastSessions() {
 function renderAll() {
   personalBests = computePersonalBests(getAllKicks());
   renderSessionControl();
+  renderActiveConditions();
   renderFormVisibility();
   renderStats();
   renderActiveKicks();
@@ -449,6 +535,54 @@ function handleFinishSession() {
 cancelEditBtn.addEventListener('click', cancelEdit);
 startSessionBtn.addEventListener('click', handleStartSession);
 finishSessionBtn.addEventListener('click', handleFinishSession);
+
+function handleConditionsChipClick(event) {
+  const chip = event.target.closest('.conditions-chip');
+  if (!chip) return;
+  const panel = chip.closest('.conditions-panel');
+  if (!panel) return;
+  const sessionId = panel.dataset.conditionsSessionId;
+  const field = chip.dataset.conditionsField;
+  const value = chip.dataset.conditionsValue;
+  const session = getSessionById(sessionId);
+  if (!session) return;
+  const next = {
+    windMph: session.windMph ?? null,
+    windDirection: session.windDirection ?? null,
+    weather: session.weather ?? null,
+    surface: session.surface ?? null,
+  };
+  next[field] = session[field] === value ? null : value;
+  updateSessionConditions(sessionId, next);
+  renderAll();
+}
+
+function handleConditionsMphChange(event) {
+  const input = event.target.closest('.conditions-mph-input');
+  if (!input) return;
+  const panel = input.closest('.conditions-panel');
+  if (!panel) return;
+  const sessionId = panel.dataset.conditionsSessionId;
+  const session = getSessionById(sessionId);
+  if (!session) return;
+  const raw = input.value.trim();
+  let windMph = null;
+  if (raw !== '') {
+    const n = Number(raw);
+    if (!Number.isNaN(n)) windMph = Math.max(0, Math.min(60, Math.round(n)));
+  }
+  const next = {
+    windMph,
+    windDirection: session.windDirection ?? null,
+    weather: session.weather ?? null,
+    surface: session.surface ?? null,
+  };
+  updateSessionConditions(sessionId, next);
+  renderAll();
+}
+
+document.addEventListener('click', handleConditionsChipClick);
+document.addEventListener('change', handleConditionsMphChange);
 
 document.getElementById('export-btn').addEventListener('click', exportAllData);
 document.getElementById('import-input').addEventListener('change', (event) => {

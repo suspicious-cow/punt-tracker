@@ -118,6 +118,25 @@ function finishSession(sessionId, finishedAt) {
   return finished;
 }
 
+function updateSessionConditions(sessionId, conditions) {
+  const sessions = getAllSessions();
+  const updated = sessions.map((s) =>
+    s.id === sessionId
+      ? {
+          ...s,
+          windMph: conditions.windMph,
+          windDirection: conditions.windDirection,
+          weather: conditions.weather,
+          surface: conditions.surface,
+        }
+      : s
+  );
+  writeSessions(updated);
+  const session = updated.find((s) => s.id === sessionId);
+  if (window.cloudSync && session) window.cloudSync.upsertSession(session);
+  return session;
+}
+
 function getKicksForSession(sessionId) {
   return getAllKicks().filter((k) => k.sessionId === sessionId);
 }

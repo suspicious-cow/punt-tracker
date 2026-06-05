@@ -2170,3 +2170,92 @@ body.role-player .player-tab-bar {
   opacity: 0;
   transform: translateY(8px);
 }
+
+/* ---------- Conditions panel (Phase 8a) ---------- */
+
+.conditions-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  margin-top: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+}
+
+.conditions-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.conditions-row-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.conditions-row-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.conditions-mph-input {
+  width: 80px;
+  padding: 8px 10px;
+  font-size: 0.95rem;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+}
+
+.conditions-mph-input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(200, 161, 60, 0.2);
+}
+
+.conditions-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.conditions-chip {
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.conditions-chip:hover {
+  border-color: var(--gold-dim);
+}
+
+.conditions-chip.selected {
+  background: var(--gold);
+  color: var(--ink);
+  border-color: var(--gold);
+}
+
+.session-row-conditions {
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.session-row-conditions-edit {
+  padding: 0 14px 4px;
+}
