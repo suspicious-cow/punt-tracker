@@ -83,10 +83,11 @@
 
   function render() {
     const losX = losToX(state.side, state.yard);
+    const ballX = losX - 5;
     losMarker.setAttribute('x1', losX);
     losMarker.setAttribute('x2', losX);
-    ballMarker.setAttribute('transform', `translate(${losX}, ${FIELD.width / 2})`);
-    trajectory.setAttribute('x1', losX);
+    ballMarker.setAttribute('transform', `translate(${ballX}, ${FIELD.width / 2})`);
+    trajectory.setAttribute('x1', ballX);
     trajectory.setAttribute('y1', FIELD.width / 2);
     trajectory.setAttribute('x2', FIELD.rightGoalX);
     trajectory.setAttribute('y2', FIELD.width / 2);
