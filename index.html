@@ -122,6 +122,12 @@
         <div class="stat-primary" id="kicker-long">&mdash;</div>
         <div class="stat-secondary" id="kicker-long-meta">no makes yet</div>
       </div>
+
+      <div class="stat-card">
+        <h3>PAT %</h3>
+        <div class="stat-primary" id="kicker-pat-pct">&mdash;</div>
+        <div class="stat-secondary" id="kicker-pat-meta">no PATs yet</div>
+      </div>
     </aside>
 
     <div class="primary-column">
@@ -162,12 +168,12 @@
               <div class="session-stat-label">Attempts</div>
             </div>
             <div class="session-stat">
-              <div class="session-stat-num" id="kicker-live-made">0</div>
-              <div class="session-stat-label">Made</div>
-            </div>
-            <div class="session-stat">
               <div class="session-stat-num" id="kicker-live-pct">&mdash;</div>
               <div class="session-stat-label">FG %</div>
+            </div>
+            <div class="session-stat">
+              <div class="session-stat-num" id="kicker-live-pat-pct">&mdash;</div>
+              <div class="session-stat-label">PAT %</div>
             </div>
             <div class="session-stat">
               <div class="session-stat-num" id="kicker-live-long">&mdash;</div>
@@ -181,6 +187,15 @@
 
       <section class="card kicker-only" id="kicker-form-card">
         <form id="kicker-kick-form" autocomplete="off">
+          <div class="field">
+            <label>Kick Type</label>
+            <div class="los-side-toggle hash-toggle" role="radiogroup" aria-label="Kick type">
+              <input type="radio" id="kicker-type-fg" name="kicker-type" value="fg" checked>
+              <label for="kicker-type-fg">Field Goal</label>
+              <input type="radio" id="kicker-type-pat" name="kicker-type" value="pat">
+              <label for="kicker-type-pat">PAT</label>
+            </div>
+          </div>
           <div class="field">
             <label>Where it was kicked from</label>
             <div class="field-picker">

@@ -22,6 +22,7 @@
   };
 
   const state = { side: 'opp', yard: 17, hash: 'middle' };
+  let mode = 'fg';
   let svg = null;
   let losInput = null;
   let sideRadios = null;
@@ -102,7 +103,8 @@
     const dist = fgDistance(state.side, state.yard);
     const sideLabel = state.side === 'own' ? 'Own' : 'Opp';
     const hashLabel = state.hash === 'left' ? 'L hash' : state.hash === 'right' ? 'R hash' : 'Middle';
-    prompt.innerHTML = `LOS at ${sideLabel} ${state.yard} &middot; ${hashLabel} &middot; ${dist} yd FG`;
+    const kindLabel = mode === 'pat' ? 'PAT' : 'FG';
+    prompt.innerHTML = `LOS at ${sideLabel} ${state.yard} &middot; ${hashLabel} &middot; ${dist} yd ${kindLabel}`;
   }
 
   function handleChange() {
@@ -170,5 +172,31 @@
     return fgDistance(state.side, state.yard);
   }
 
-  window.kickerField = { setup, reset, getLos, getHash, getDistance };
+  function getMode() {
+    return mode;
+  }
+
+  function setLosLocked(locked) {
+    if (losInput) losInput.disabled = locked;
+    document.querySelectorAll('input[name="kicker-los-side"]').forEach((r) => { r.disabled = locked; });
+    const stepUp = document.getElementById('kicker-los-step-up');
+    const stepDown = document.getElementById('kicker-los-step-down');
+    if (stepUp) stepUp.disabled = locked;
+    if (stepDown) stepDown.disabled = locked;
+  }
+
+  function setMode(newMode) {
+    mode = newMode === 'pat' ? 'pat' : 'fg';
+    if (mode === 'pat') {
+      if (losInput) losInput.value = 3;
+      const oppRadio = document.getElementById('kicker-los-side-opp');
+      if (oppRadio) oppRadio.checked = true;
+      setLosLocked(true);
+    } else {
+      setLosLocked(false);
+    }
+    handleChange();
+  }
+
+  window.kickerField = { setup, reset, getLos, getHash, getDistance, getMode, setMode };
 })();
